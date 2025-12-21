@@ -5,7 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/ssh"
+
+	"github.com/azizoid/zero-trust-dashboard/pkg/ssh"
 )
 
 type Scanner struct {
@@ -163,4 +164,3 @@ func deduplicatePorts(ports []int) []int {
 
 	return result
 }
-

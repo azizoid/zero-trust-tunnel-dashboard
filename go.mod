@@ -1,3 +1,3 @@
-module github.com/azizoid/zero-trust-dashnoard
+module github.com/azizoid/zero-trust-dashboard
 
 go 1.21

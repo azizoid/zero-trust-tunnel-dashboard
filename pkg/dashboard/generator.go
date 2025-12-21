@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/detector"
+
+	"github.com/azizoid/zero-trust-dashboard/pkg/detector"
 )
 
 type Generator struct {
@@ -606,17 +607,17 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 		Networks      []string
 	}
 
-		var serviceData []ServiceData
+	var serviceData []ServiceData
 	for _, svc := range g.services {
 		if svc.Type == "nginx" || strings.Contains(strings.ToLower(svc.Name), "nginx") {
 			continue
 		}
-		
+
 		icon := getServiceIcon(svc.Type)
 		localPort := 0
 		serviceURL := svc.URL
 		isProxied := strings.Contains(svc.Description, "Nginx Proxy") || svc.Domain != ""
-		
+
 		if svc.Port > 0 && !isProxied {
 			if lp, exists := localPorts[svc.Port]; exists {
 				localPort = lp
@@ -630,16 +631,16 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 				serviceURL = ""
 			}
 		}
-		
+
 		if isProxied {
 			localPort = 0
 		}
-		
+
 		if strings.Contains(serviceURL, fmt.Sprintf(":%d", tunnelStartPort)) || localPort == tunnelStartPort {
 			serviceURL = ""
 			localPort = 0
 		}
-		
+
 		serviceData = append(serviceData, ServiceData{
 			Name:        svc.Name,
 			Type:        svc.Type,
@@ -658,7 +659,7 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 	proxied := 0
 	internal := 0
 	networkSet := make(map[string]bool)
-	
+
 	for _, svc := range serviceData {
 		if svc.URL != "" {
 			accessible++
@@ -671,7 +672,7 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 			networkSet[svc.Network] = true
 		}
 	}
-	
+
 	networks := make([]string, 0, len(networkSet))
 	for net := range networkSet {
 		networks = append(networks, net)
@@ -732,7 +733,7 @@ func (g *Generator) GenerateCLI(localPorts map[int]int) string {
 			sb.WriteString("\n")
 			continue
 		}
-		
+
 		if svc.Port == 0 && strings.Contains(svc.Description, "Nginx Proxy") {
 			sb.WriteString(fmt.Sprintf("%s\n", svc.Name))
 			sb.WriteString(fmt.Sprintf("   Type: %s\n", svc.Type))
@@ -764,14 +765,14 @@ func (g *Generator) GenerateCLI(localPorts map[int]int) string {
 func getServiceIcon(serviceType string) string {
 	icons := map[string]string{
 		"grafana":     "",
-		"prometheus":   "",
-		"kubernetes":   "",
-		"jenkins":      "",
-		"jupyter":      "",
-		"web":          "",
-		"api":          "",
-		"application":  "",
-		"unknown":      "",
+		"prometheus":  "",
+		"kubernetes":  "",
+		"jenkins":     "",
+		"jupyter":     "",
+		"web":         "",
+		"api":         "",
+		"application": "",
+		"unknown":     "",
 	}
 
 	if icon, ok := icons[strings.ToLower(serviceType)]; ok {
@@ -779,4 +780,3 @@ func getServiceIcon(serviceType string) string {
 	}
 	return ""
 }
-

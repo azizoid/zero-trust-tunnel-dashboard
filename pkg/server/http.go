@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/detector"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/scanner"
+
+	"github.com/azizoid/zero-trust-dashboard/pkg/detector"
+	"github.com/azizoid/zero-trust-dashboard/pkg/scanner"
 )
 
 type Server struct {
@@ -108,4 +109,3 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		"services": len(s.services),
 	})
 }
-

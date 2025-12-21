@@ -8,24 +8,25 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/dashboard"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/detector"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/scanner"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/server"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/sshconfig"
-	"github.com/azizoid/zero-trust-dashnoard/pkg/tunnel"
+
+	"github.com/azizoid/zero-trust-dashboard/pkg/dashboard"
+	"github.com/azizoid/zero-trust-dashboard/pkg/detector"
+	"github.com/azizoid/zero-trust-dashboard/pkg/scanner"
+	"github.com/azizoid/zero-trust-dashboard/pkg/server"
+	"github.com/azizoid/zero-trust-dashboard/pkg/sshconfig"
+	"github.com/azizoid/zero-trust-dashboard/pkg/tunnel"
 )
 
 func main() {
 	var (
-		host         = flag.String("host", "", "SSH host alias from ~/.ssh/config (alternative to --server/--user)")
-		serverAddr   = flag.String("server", "", "SSH server address (required if --host not set)")
-		user         = flag.String("user", "", "SSH username (required if --host not set)")
-		keyPath      = flag.String("key", "", "Path to SSH private key (optional, overrides SSH config)")
-		scanPorts    = flag.String("scan-ports", "3000-9000", "Port range to scan (e.g., 3000-9000)")
-		dashboardPort = flag.Int("dashboard-port", 8080, "Port for the web dashboard")
+		host            = flag.String("host", "", "SSH host alias from ~/.ssh/config (alternative to --server/--user)")
+		serverAddr      = flag.String("server", "", "SSH server address (required if --host not set)")
+		user            = flag.String("user", "", "SSH username (required if --host not set)")
+		keyPath         = flag.String("key", "", "Path to SSH private key (optional, overrides SSH config)")
+		scanPorts       = flag.String("scan-ports", "3000-9000", "Port range to scan (e.g., 3000-9000)")
+		dashboardPort   = flag.Int("dashboard-port", 8080, "Port for the web dashboard")
 		tunnelStartPort = flag.Int("tunnel-start-port", 9000, "Starting port for local tunnel ports")
-		detectionMode = flag.String("detection-mode", "both", "Service detection method: docker, direct, or both (default: both)")
+		detectionMode   = flag.String("detection-mode", "both", "Service detection method: docker, direct, or both (default: both)")
 	)
 	flag.Parse()
 
@@ -107,7 +108,7 @@ func main() {
 		} else {
 			dockerServices, err = detector.DetectDockerServices(finalServer, finalUser, finalKey, false, "")
 		}
-		
+
 		if err != nil {
 			if *detectionMode == "docker" {
 				fmt.Fprintf(os.Stderr, "Error: Docker detection failed: %v\n", err)
@@ -116,24 +117,24 @@ func main() {
 			fmt.Printf("Warning: Docker detection failed: %v\n", err)
 			dockerServices = make(map[int]*detector.DockerService)
 		}
-		
+
 		var err2 error
 		if *host != "" {
 			allContainers, err2 = detector.GetAllDockerContainers("", "", "", true, *host)
 		} else {
 			allContainers, err2 = detector.GetAllDockerContainers(finalServer, finalUser, finalKey, false, "")
 		}
-		
+
 		if err2 == nil {
 			totalContainers := len(allContainers)
 			accessibleContainers := len(dockerServices)
-			
+
 			fmt.Printf("Found %d Docker container(s) (%d with exposed ports)\n", totalContainers, accessibleContainers)
-			
+
 			if totalContainers > accessibleContainers {
 				fmt.Printf("Note: %d container(s) have no exposed ports or are on internal networks\n", totalContainers-accessibleContainers)
 			}
-			
+
 			for port := range dockerServices {
 				ports = append(ports, port)
 			}
@@ -152,7 +153,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error scanning ports: %v\n", err)
 			os.Exit(1)
 		}
-		
+
 		portMap := make(map[int]bool)
 		for _, p := range ports {
 			portMap[p] = true
@@ -211,7 +212,7 @@ func main() {
 	if *detectionMode == "docker" || *detectionMode == "both" {
 		hasNginxProxy := false
 		nginxRemotePort := 0
-		
+
 		var nginxPorts []int
 		for port, dockerSvc := range dockerServices {
 			if dockerSvc != nil && (strings.Contains(strings.ToLower(dockerSvc.Image), "nginx") || strings.Contains(strings.ToLower(dockerSvc.ContainerName), "nginx")) {
@@ -219,7 +220,7 @@ func main() {
 				nginxPorts = append(nginxPorts, port)
 			}
 		}
-		
+
 		if hasNginxProxy && len(nginxPorts) > 0 {
 			for _, preferredPort := range []int{443, 80, 81} {
 				for _, port := range nginxPorts {
@@ -232,12 +233,12 @@ func main() {
 					break
 				}
 			}
-			
+
 			if nginxRemotePort == 0 {
 				nginxRemotePort = nginxPorts[0]
 			}
 		}
-		
+
 		if !hasNginxProxy {
 			for _, svc := range services {
 				if svc.Type == "nginx" || strings.Contains(strings.ToLower(svc.Name), "nginx") {
@@ -247,7 +248,7 @@ func main() {
 				}
 			}
 		}
-		
+
 		nginxLocalPort := 0
 		nginxContainerName := ""
 		if nginxRemotePort > 0 {
@@ -269,14 +270,14 @@ func main() {
 				}
 			}
 		}
-		
+
 		servicePortMap := make(map[int]bool)
 		for _, svc := range services {
 			if svc.Port > 0 {
 				servicePortMap[svc.Port] = true
 			}
 		}
-		
+
 		for _, container := range allContainers {
 			if !container.HasPorts || container.Port == 0 {
 				service := detector.IdentifyServiceFromDocker(container)
@@ -289,7 +290,7 @@ func main() {
 						} else {
 							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "")
 						}
-						
+
 						if len(domains) > 0 {
 							domain := domains[0]
 							service.Port = 0
@@ -320,7 +321,7 @@ func main() {
 							} else {
 								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "")
 							}
-							
+
 							if len(domains) > 0 {
 								domain := domains[0]
 								service.Port = 0
@@ -345,7 +346,7 @@ func main() {
 			}
 		}
 	}
-	
+
 	fmt.Printf("Detected %d service(s)\n\n", len(services))
 	for i := range services {
 		if services[i].Port > 0 {
@@ -387,4 +388,3 @@ func main() {
 	tunnelMgr.CloseAll()
 	fmt.Println("All tunnels closed. Goodbye!")
 }
-
