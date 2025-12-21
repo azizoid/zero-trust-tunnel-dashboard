@@ -8,12 +8,12 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"zero-trust-dashboard/pkg/dashboard"
-	"zero-trust-dashboard/pkg/detector"
-	"zero-trust-dashboard/pkg/scanner"
-	"zero-trust-dashboard/pkg/server"
-	"zero-trust-dashboard/pkg/sshconfig"
-	"zero-trust-dashboard/pkg/tunnel"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/dashboard"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/detector"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/scanner"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/server"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/sshconfig"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/tunnel"
 )
 
 func main() {

@@ -46,8 +46,8 @@ Then you can simply run:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd zero-trust-dashboard
+git clone https://github.com/azizoid/zero-trust-dashnoard.git
+cd zero-trust-dashnoard
 
 # Build the tool
 go build -o tunnel-dash ./cmd/tunnel-dash
@@ -71,8 +71,8 @@ go build -o tunnel-dash ./cmd/tunnel-dash
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd zero-trust-dashboard
+git clone https://github.com/azizoid/zero-trust-dashnoard.git
+cd zero-trust-dashnoard
 
 # Build the tool
 go build -o tunnel-dash ./cmd/tunnel-dash

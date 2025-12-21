@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"zero-trust-dashboard/pkg/ssh"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/ssh"
 )
 
 type Scanner struct {

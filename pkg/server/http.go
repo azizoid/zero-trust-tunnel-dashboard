@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"zero-trust-dashboard/pkg/detector"
-	"zero-trust-dashboard/pkg/scanner"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/detector"
+	"github.com/azizoid/zero-trust-dashnoard/pkg/scanner"
 )
 
 type Server struct {
