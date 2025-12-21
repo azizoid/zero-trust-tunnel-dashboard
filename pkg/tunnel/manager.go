@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// Manager handles SSH tunnel lifecycle
 type Manager struct {
 	server       string
 	user         string
@@ -23,7 +22,6 @@ type Manager struct {
 	startPort  int
 }
 
-// Tunnel represents a single SSH tunnel
 type Tunnel struct {
 	RemotePort int
 	LocalPort  int
@@ -32,7 +30,6 @@ type Tunnel struct {
 	cancel     context.CancelFunc
 }
 
-// NewManager creates a new tunnel manager
 func NewManager(server, user, keyPath string, startPort int) *Manager {
 	return &Manager{
 		server:     server,
@@ -46,7 +43,6 @@ func NewManager(server, user, keyPath string, startPort int) *Manager {
 	}
 }
 
-// NewManagerWithHost creates a new tunnel manager using SSH config host alias
 func NewManagerWithHost(hostAlias string, startPort int) *Manager {
 	return &Manager{
 		useHostAlias: true,
@@ -58,24 +54,19 @@ func NewManagerWithHost(hostAlias string, startPort int) *Manager {
 	}
 }
 
-// CreateTunnel creates an SSH tunnel for a remote port
 func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 	m.tunnelsMu.Lock()
 	defer m.tunnelsMu.Unlock()
 
-	// Check if tunnel already exists
 	if tunnel, exists := m.tunnels[remotePort]; exists {
 		return tunnel.LocalPort, nil
 	}
 
-	// Use the remote port as the local port if available, otherwise use nextPort
 	localPort := remotePort
 	if localPort < 1024 || localPort > 65535 {
-		// If port is out of range, use nextPort
 		localPort = m.nextPort
 		m.nextPort++
 	} else {
-		// Check if local port is already in use
 		if _, exists := m.localPorts[localPort]; exists {
 			localPort = m.nextPort
 			m.nextPort++
@@ -130,7 +121,6 @@ func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 	return localPort, nil
 }
 
-// GetLocalPort returns the local port for a remote port
 func (m *Manager) GetLocalPort(remotePort int) (int, bool) {
 	m.portsMu.RLock()
 	defer m.portsMu.RUnlock()
@@ -138,7 +128,6 @@ func (m *Manager) GetLocalPort(remotePort int) (int, bool) {
 	return localPort, exists
 }
 
-// CloseTunnel closes a specific tunnel
 func (m *Manager) CloseTunnel(remotePort int) error {
 	m.tunnelsMu.Lock()
 	defer m.tunnelsMu.Unlock()
@@ -161,7 +150,6 @@ func (m *Manager) CloseTunnel(remotePort int) error {
 	return nil
 }
 
-// CloseAll closes all tunnels
 func (m *Manager) CloseAll() {
 	m.tunnelsMu.Lock()
 	defer m.tunnelsMu.Unlock()
@@ -179,7 +167,6 @@ func (m *Manager) CloseAll() {
 	m.portsMu.Unlock()
 }
 
-// HealthCheck verifies if a tunnel is still running
 func (m *Manager) HealthCheck(remotePort int) bool {
 	m.tunnelsMu.RLock()
 	defer m.tunnelsMu.RUnlock()

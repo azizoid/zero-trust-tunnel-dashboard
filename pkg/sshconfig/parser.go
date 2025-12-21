@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-// Config represents SSH connection details
 type Config struct {
 	Host     string
 	HostName string
@@ -18,7 +17,6 @@ type Config struct {
 	Port     int
 }
 
-// ParseSSHConfig parses SSH config file and returns config for a given host
 func ParseSSHConfig(host string) (*Config, error) {
 	configPath := os.Getenv("SSH_CONFIG")
 	if configPath == "" {
@@ -37,7 +35,7 @@ func ParseSSHConfig(host string) (*Config, error) {
 
 	config := &Config{
 		Host: host,
-		Port: 22, // default SSH port
+		Port: 22,
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -63,7 +61,6 @@ func ParseSSHConfig(host string) (*Config, error) {
 					matches = true
 					break
 				}
-				// Simple wildcard matching
 				if strings.HasPrefix(pattern, "*") && strings.HasSuffix(host, strings.TrimPrefix(pattern, "*")) {
 					matches = true
 					break

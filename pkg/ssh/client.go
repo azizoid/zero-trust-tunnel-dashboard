@@ -6,7 +6,6 @@ import (
 	"os/exec"
 )
 
-// Config represents SSH connection configuration
 type Config struct {
 	Server       string
 	User         string
@@ -15,29 +14,24 @@ type Config struct {
 	HostAlias    string
 }
 
-// Client handles SSH command execution
 type Client struct {
 	config Config
 }
 
-// NewClient creates a new SSH client
 func NewClient(config Config) *Client {
 	return &Client{config: config}
 }
 
-// BuildCommand builds an SSH command to execute on the remote server
 func (c *Client) BuildCommand(remoteCmd string) *exec.Cmd {
 	args := c.buildSSHArgs(remoteCmd)
 	return exec.Command("ssh", args...)
 }
 
-// BuildCommandWithContext builds an SSH command with context for cancellation
 func (c *Client) BuildCommandWithContext(ctx context.Context, remoteCmd string) *exec.Cmd {
 	args := c.buildSSHArgs(remoteCmd)
 	return exec.CommandContext(ctx, "ssh", args...)
 }
 
-// BuildTunnelCommand builds an SSH tunnel command (-L flag)
 func (c *Client) BuildTunnelCommand(ctx context.Context, localPort, remotePort int) *exec.Cmd {
 	args := []string{
 		"-L", fmt.Sprintf("%d:localhost:%d", localPort, remotePort),
@@ -59,7 +53,6 @@ func (c *Client) BuildTunnelCommand(ctx context.Context, localPort, remotePort i
 	return exec.CommandContext(ctx, "ssh", args...)
 }
 
-// buildSSHArgs builds the base SSH arguments
 func (c *Client) buildSSHArgs(remoteCmd string) []string {
 	args := []string{
 		"-o", "StrictHostKeyChecking=no",

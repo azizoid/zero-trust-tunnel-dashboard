@@ -8,23 +8,23 @@ import (
 	"time"
 )
 
-// Service represents a detected service
+
 type Service struct {
 	Port        int
 	Name        string
 	Type        string
 	URL         string
 	Description string
-	Domain      string // Domain name if exposed via Nginx Proxy Manager
-	Network     string // Docker network name
+	Domain      string 
+	Network     string 
 }
 
-// Detector detects services running on ports
+
 type Detector struct {
 	timeout time.Duration
 }
 
-// NewDetector creates a new service detector
+
 func NewDetector(timeout time.Duration) *Detector {
 	if timeout == 0 {
 		timeout = 3 * time.Second
@@ -32,8 +32,8 @@ func NewDetector(timeout time.Duration) *Detector {
 	return &Detector{timeout: timeout}
 }
 
-// DetectServices detects services on the given ports via localhost (tunnel)
-// Uses both Docker info (if available) and HTTP probing
+
+
 func (d *Detector) DetectServices(ports []int, dockerServices map[int]*DockerService) []Service {
 	var services []Service
 	client := &http.Client{
@@ -63,7 +63,7 @@ func (d *Detector) DetectServices(ports []int, dockerServices map[int]*DockerSer
 	return services
 }
 
-// DetectServicesFromDocker detects services only from Docker info (no HTTP probing)
+
 func (d *Detector) DetectServicesFromDocker(ports []int, dockerServices map[int]*DockerService) []Service {
 	var services []Service
 
@@ -88,7 +88,7 @@ func (d *Detector) DetectServicesFromDocker(ports []int, dockerServices map[int]
 	return services
 }
 
-// DetectAllDockerContainers detects all Docker containers including those without exposed ports
+
 func (d *Detector) DetectAllDockerContainers(allContainers []*DockerService) []Service {
 	var services []Service
 
@@ -107,7 +107,7 @@ func (d *Detector) DetectAllDockerContainers(allContainers []*DockerService) []S
 	return services
 }
 
-// probePort probes a port to identify the service
+
 func (d *Detector) probePort(client *http.Client, port int) *Service {
 	service := d.tryHTTP(client, port, false)
 	if service != nil && service.Type != "unknown" && service.Type != "http" {
@@ -141,7 +141,7 @@ func (d *Detector) probePort(client *http.Client, port int) *Service {
 	}
 }
 
-// tryHTTP tries to connect via HTTP or HTTPS
+
 func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Service {
 	protocol := "http"
 	if useHTTPS {
@@ -173,7 +173,7 @@ func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Servic
 	return nil
 }
 
-// tryHTTPEndpoints tries common HTTP endpoints to identify the service
+
 func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool) *Service {
 	protocol := "http"
 	if useHTTPS {
@@ -206,7 +206,7 @@ func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool
 	return nil
 }
 
-// identifyServiceFromResponse identifies service from HTTP response
+
 func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, protocol string) *Service {
 	service := &Service{
 		Port: port,
@@ -297,7 +297,7 @@ func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, pr
 	return nil
 }
 
-// guessServiceByPort guesses service type based on common port numbers (fallback only)
+
 func (d *Detector) guessServiceByPort(port int) *Service {
 	portMap := map[int]*Service{
 		3000: {Name: "Node.js Dev Server", Type: "webapp", Description: "Common port for Node.js development servers"},

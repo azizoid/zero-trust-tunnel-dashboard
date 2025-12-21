@@ -8,7 +8,6 @@ import (
 	"zero-trust-dashboard/pkg/scanner"
 )
 
-// Server handles HTTP requests for the dashboard
 type Server struct {
 	port     int
 	services []detector.Service
@@ -16,7 +15,6 @@ type Server struct {
 	scanner  *scanner.Scanner
 }
 
-// NewServer creates a new HTTP server
 func NewServer(port int, services []detector.Service) *Server {
 	return &Server{
 		port:     port,
@@ -24,17 +22,14 @@ func NewServer(port int, services []detector.Service) *Server {
 	}
 }
 
-// SetScanner sets the port scanner for the server
 func (s *Server) SetScanner(sc *scanner.Scanner) {
 	s.scanner = sc
 }
 
-// SetHTML sets the HTML content for the dashboard
 func (s *Server) SetHTML(html string) {
 	s.html = html
 }
 
-// Start starts the HTTP server
 func (s *Server) Start() error {
 	http.HandleFunc("/", s.handleDashboard)
 	http.HandleFunc("/api/services", s.handleServicesAPI)
@@ -46,12 +41,10 @@ func (s *Server) Start() error {
 	return http.ListenAndServe(addr, nil)
 }
 
-// UpdateServices updates the list of services
 func (s *Server) UpdateServices(services []detector.Service) {
 	s.services = services
 }
 
-// handleDashboard serves the HTML dashboard
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -66,7 +59,6 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handleServicesAPI returns services as JSON
 func (s *Server) handleServicesAPI(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -77,7 +69,6 @@ func (s *Server) handleServicesAPI(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s.services)
 }
 
-// handleScan triggers a port scan and returns results
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -110,7 +101,6 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleHealth returns server health status
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

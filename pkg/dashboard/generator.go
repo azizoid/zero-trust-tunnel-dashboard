@@ -7,19 +7,16 @@ import (
 	"zero-trust-dashboard/pkg/detector"
 )
 
-// Generator generates dashboard HTML and CLI output
 type Generator struct {
 	services []detector.Service
 }
 
-// NewGenerator creates a new dashboard generator
 func NewGenerator(services []detector.Service) *Generator {
 	return &Generator{
 		services: services,
 	}
 }
 
-// GenerateHTML generates the HTML dashboard
 func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
 	tmpl := `{{define "contains"}}{{if .}}{{.}}{{end}}{{end}}
 <!DOCTYPE html>
@@ -412,15 +409,24 @@ func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
             fetch('/api/scan?range=' + encodeURIComponent(portRange), {
                 method: 'POST'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error: ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.error) {
                     result.className = 'scan-result error';
                     result.innerHTML = 'Error: ' + data.error;
-                } else {
+                } else if (data.ports && Array.isArray(data.ports)) {
                     result.className = 'scan-result success';
                     const portsList = data.ports.join(', ');
-                    result.innerHTML = 'Found ' + data.count + ' open port(s): ' + portsList;
+                    const count = data.count || data.ports.length;
+                    result.innerHTML = 'Found ' + count + ' open port(s): ' + portsList;
+                } else {
+                    result.className = 'scan-result error';
+                    result.innerHTML = 'Error: Invalid response from server';
                 }
                 btn.disabled = false;
                 btn.textContent = 'Scan Open Ports';
@@ -602,7 +608,6 @@ func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
 
 		var serviceData []ServiceData
 	for _, svc := range g.services {
-		// Skip Nginx itself - it's just a proxy, not a service to access
 		if svc.Type == "nginx" || strings.Contains(strings.ToLower(svc.Name), "nginx") {
 			continue
 		}
@@ -612,11 +617,9 @@ func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
 		serviceURL := svc.URL
 		isProxied := strings.Contains(svc.Description, "Nginx Proxy") || svc.Domain != ""
 		
-		// For services with direct ports (not proxied), set URL if tunnel exists
 		if svc.Port > 0 && !isProxied {
 			if lp, exists := localPorts[svc.Port]; exists {
 				localPort = lp
-				// Skip if local port is 9000 (that's Nginx's tunnel, not a direct service)
 				if localPort == 9000 {
 					serviceURL = ""
 					localPort = 0
@@ -624,18 +627,12 @@ func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
 					serviceURL = fmt.Sprintf("http://localhost:%d", localPort)
 				}
 			} else {
-				// No tunnel exists, don't set URL (no button)
 				serviceURL = ""
 			}
 		}
 		
-		// For proxied services, only keep URL if it was already set (meaning Nginx tunnel exists)
-		// Otherwise clear it so no button is shown
 		if isProxied {
 			localPort = 0
-			// If serviceURL is empty or doesn't point to a working tunnel, clear it
-			// The URL should already be set in main.go if nginxLocalPort exists
-			// If not set, leave it empty to show info instead of button
 		}
 		
 		serviceData = append(serviceData, ServiceData{
@@ -651,7 +648,6 @@ func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
 		})
 	}
 
-	// Calculate statistics
 	totalServices := len(serviceData)
 	accessible := 0
 	proxied := 0
@@ -713,7 +709,6 @@ func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
 	return buf.String(), nil
 }
 
-// GenerateCLI generates CLI-friendly output
 func (g *Generator) GenerateCLI(localPorts map[int]int) string {
 	if len(g.services) == 0 {
 		return "No services detected.\n"

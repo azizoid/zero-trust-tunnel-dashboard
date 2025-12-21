@@ -1,6 +1,5 @@
 package config
 
-// Config holds all application configuration
 type Config struct {
 	SSH          SSHConfig
 	Scan         ScanConfig
@@ -9,7 +8,6 @@ type Config struct {
 	Tunnel       TunnelConfig
 }
 
-// SSHConfig holds SSH connection configuration
 type SSHConfig struct {
 	Host         string
 	Server       string
@@ -19,27 +17,22 @@ type SSHConfig struct {
 	HostAlias    string
 }
 
-// ScanConfig holds port scanning configuration
 type ScanConfig struct {
 	PortRange string
 }
 
-// DashboardConfig holds dashboard server configuration
 type DashboardConfig struct {
 	Port int
 }
 
-// DetectionConfig holds service detection configuration
 type DetectionConfig struct {
 	Mode string
 }
 
-// TunnelConfig holds tunnel configuration
 type TunnelConfig struct {
 	StartPort int
 }
 
-// DefaultConfig returns a default configuration
 func DefaultConfig() *Config {
 	return &Config{
 		Scan: ScanConfig{

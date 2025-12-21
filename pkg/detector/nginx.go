@@ -6,24 +6,18 @@ import (
 	"strings"
 )
 
-// QueryNPMDatabase queries NPM SQLite database to find domain names for containers
-// Returns domain names for a given container
 func QueryNPMDatabase(nginxContainerName string, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
-	// Try multiple methods to get domain names
 	
-	// Method 1: Try sqlite3 command in container
 	domains, err := queryNPMWithSQLite3(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
 	}
 	
-	// Method 2: Try reading from Nginx config files
 	domains, err = getNginxDomainsFromConfig(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
 	}
 	
-	// Method 3: Try to find database on host and query it
 	domains, err = queryNPMFromHost(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
@@ -32,12 +26,10 @@ func QueryNPMDatabase(nginxContainerName string, containerName string, container
 	return nil, nil
 }
 
-// queryNPMWithSQLite3 tries to use sqlite3 command inside the container
 func queryNPMWithSQLite3(nginxContainerName string, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
 	var cmd *exec.Cmd
 	dbPath := "/data/database.sqlite"
 	
-	// Query to find domain names for this container
 	query := fmt.Sprintf("SELECT domain_names FROM proxy_host WHERE (forward_host LIKE '%%%s%%' OR forward_host = '%s') AND forward_port = %d", containerName, containerName, containerPort)
 	
 	if useHostAlias {
@@ -73,7 +65,6 @@ func queryNPMWithSQLite3(nginxContainerName string, containerName string, contai
 		if line == "" || strings.Contains(line, "exec failed") || strings.Contains(line, "executable file not found") {
 			continue
 		}
-		// Domain names are comma-separated in NPM
 		domainList := strings.Split(line, ",")
 		for _, domain := range domainList {
 			domain = strings.TrimSpace(domain)
@@ -89,9 +80,7 @@ func queryNPMWithSQLite3(nginxContainerName string, containerName string, contai
 	return nil, fmt.Errorf("no domains found")
 }
 
-// queryNPMFromHost tries to find and query the database from the host
 func queryNPMFromHost(nginxContainerName string, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
-	// Try to find the database file on the host by checking docker inspect
 	var cmd *exec.Cmd
 	
 	if useHostAlias {
@@ -125,7 +114,6 @@ func queryNPMFromHost(nginxContainerName string, containerName string, container
 		return nil, fmt.Errorf("could not find mount path")
 	}
 	
-	// Now query the database from the host
 	dbPath := fmt.Sprintf("%s/database.sqlite", mountPath)
 	query := fmt.Sprintf("SELECT domain_names FROM proxy_host WHERE (forward_host LIKE '%%%s%%' OR forward_host = '%s') AND forward_port = %d", containerName, containerName, containerPort)
 	
@@ -177,10 +165,7 @@ func queryNPMFromHost(nginxContainerName string, containerName string, container
 	return nil, fmt.Errorf("no domains found")
 }
 
-// getNginxDomainsFromConfig tries to read domain names from NPM config files
 func getNginxDomainsFromConfig(nginxContainerName string, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
-	// Alternative: read from NPM's generated nginx config files
-	// Config files are usually in /data/nginx/proxy_host/
 	var cmd *exec.Cmd
 	
 	if useHostAlias {

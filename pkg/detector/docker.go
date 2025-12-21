@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// DockerService represents a service discovered via Docker
+
 type DockerService struct {
 	ContainerName string
 	Image         string
@@ -15,10 +15,10 @@ type DockerService struct {
 	PortMapping   string
 	Network       string
 	HasPorts      bool
-	ExposedToHost bool // true if port is exposed to host (has -p mapping), false if only EXPOSE in Dockerfile
+	ExposedToHost bool 
 }
 
-// DetectDockerServices detects services by running docker ps over SSH
+
 func DetectDockerServices(server, user, keyPath string, useHostAlias bool, hostAlias string) (map[int]*DockerService, error) {
 	var cmd *exec.Cmd
 	if useHostAlias {
@@ -51,7 +51,7 @@ func DetectDockerServices(server, user, keyPath string, useHostAlias bool, hostA
 	return parseDockerPS(string(output)), nil
 }
 
-// GetAllDockerContainers gets all containers with their info (including those without exposed ports)
+
 func GetAllDockerContainers(server, user, keyPath string, useHostAlias bool, hostAlias string) ([]*DockerService, error) {
 	var cmd *exec.Cmd
 	if useHostAlias {
@@ -84,13 +84,13 @@ func GetAllDockerContainers(server, user, keyPath string, useHostAlias bool, hos
 	return parseAllDockerContainers(string(output)), nil
 }
 
-// parseDockerPS parses docker ps output and returns only containers with ports exposed to host
+
 func parseDockerPS(output string) map[int]*DockerService {
 	services := make(map[int]*DockerService)
 	allContainers := parseAllDockerContainers(output)
 	
 	for _, container := range allContainers {
-		// Only include ports that are exposed to the host (not just EXPOSE in Dockerfile)
+		
 		if container.HasPorts && container.Port > 0 && container.ExposedToHost {
 			services[container.Port] = container
 		}
@@ -99,7 +99,7 @@ func parseDockerPS(output string) map[int]*DockerService {
 	return services
 }
 
-// parseAllDockerContainers parses docker ps output and returns all containers
+
 func parseAllDockerContainers(output string) []*DockerService {
 	var containers []*DockerService
 	lines := strings.Split(output, "\n")
@@ -223,7 +223,7 @@ func parsePort(portStr string) (int, error) {
 	return port, err
 }
 
-// IdentifyServiceFromDocker identifies service type from Docker container info
+
 func IdentifyServiceFromDocker(dockerSvc *DockerService) *Service {
 	imageName := dockerSvc.Image
 	if strings.Contains(imageName, ":") {

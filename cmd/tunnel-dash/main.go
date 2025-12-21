@@ -83,16 +83,13 @@ func main() {
 	fmt.Printf("Scanning ports: %s\n", *scanPorts)
 	fmt.Println()
 
-	// Initialize components
 	var tunnelMgr *tunnel.Manager
 	var portScanner *scanner.Scanner
 
 	if *host != "" {
-		// Use SSH config host alias
 		tunnelMgr = tunnel.NewManagerWithHost(*host, *tunnelStartPort)
 		portScanner = scanner.NewScannerWithHost(*host)
 	} else {
-		// Use explicit server/user/key
 		tunnelMgr = tunnel.NewManager(finalServer, finalUser, finalKey, *tunnelStartPort)
 		portScanner = scanner.NewScanner(finalServer, finalUser, finalKey)
 	}
@@ -137,8 +134,6 @@ func main() {
 				fmt.Printf("Note: %d container(s) have no exposed ports or are on internal networks\n", totalContainers-accessibleContainers)
 			}
 			
-			// Only create tunnels for ports exposed to the host (from dockerServices)
-			// Container-only ports (not exposed to host) can't be accessed via SSH tunnel
 			for port := range dockerServices {
 				ports = append(ports, port)
 			}
@@ -253,14 +248,12 @@ func main() {
 			}
 		}
 		
-		// Get Nginx local port if tunnel exists
 		nginxLocalPort := 0
 		nginxContainerName := ""
 		if nginxRemotePort > 0 {
 			if lp, exists := localPorts[nginxRemotePort]; exists {
 				nginxLocalPort = lp
 			}
-			// Find Nginx container name
 			for port, dockerSvc := range dockerServices {
 				if port == nginxRemotePort && dockerSvc != nil {
 					nginxContainerName = dockerSvc.ContainerName
@@ -277,7 +270,6 @@ func main() {
 			}
 		}
 		
-		// Track which ports are already in services to avoid duplicates
 		servicePortMap := make(map[int]bool)
 		for _, svc := range services {
 			if svc.Port > 0 {
@@ -287,12 +279,10 @@ func main() {
 		
 		for _, container := range allContainers {
 			if !container.HasPorts || container.Port == 0 {
-				// Container with no ports
 				service := detector.IdentifyServiceFromDocker(container)
 				if service != nil {
 					service.Network = container.Network
 					if hasNginxProxy && nginxLocalPort > 0 && nginxContainerName != "" {
-						// Try to get domain name from NPM (silently fail if not available)
 						var domains []string
 						if *host != "" {
 							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host)
@@ -301,7 +291,6 @@ func main() {
 						}
 						
 						if len(domains) > 0 {
-							// Use the first domain
 							domain := domains[0]
 							service.Port = 0
 							service.URL = fmt.Sprintf("http://localhost:%d", nginxLocalPort)
@@ -320,13 +309,11 @@ func main() {
 					services = append(services, *service)
 				}
 			} else if !container.ExposedToHost {
-				// Container with EXPOSE only (not exposed to host) - access via Nginx if available
 				if !servicePortMap[container.Port] {
 					service := detector.IdentifyServiceFromDocker(container)
 					if service != nil {
 						service.Network = container.Network
 						if hasNginxProxy && nginxLocalPort > 0 && nginxContainerName != "" {
-							// Try to get domain name from NPM (silently fail if not available)
 							var domains []string
 							if *host != "" {
 								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host)
@@ -335,7 +322,6 @@ func main() {
 							}
 							
 							if len(domains) > 0 {
-								// Use the first domain
 								domain := domains[0]
 								service.Port = 0
 								service.URL = fmt.Sprintf("http://localhost:%d", nginxLocalPort)
@@ -356,8 +342,6 @@ func main() {
 					}
 				}
 			} else {
-				// Container with port exposed to host - already handled by DetectServicesFromDocker
-				// Skip to avoid duplicates
 			}
 		}
 	}
@@ -365,7 +349,6 @@ func main() {
 	fmt.Printf("Detected %d service(s)\n\n", len(services))
 	for i := range services {
 		if services[i].Port > 0 {
-			// Use the port we found directly
 			if strings.HasPrefix(services[i].URL, "https://") {
 				services[i].URL = fmt.Sprintf("https://localhost:%d", services[i].Port)
 			} else if services[i].URL == "" {
