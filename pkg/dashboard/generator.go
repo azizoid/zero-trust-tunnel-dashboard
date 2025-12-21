@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
-	"zero-trust-auth/pkg/detector"
+	"zero-trust-dashboard/pkg/detector"
 )
 
 // Generator generates dashboard HTML and CLI output

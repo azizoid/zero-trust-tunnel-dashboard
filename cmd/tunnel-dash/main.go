@@ -8,12 +8,12 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"zero-trust-auth/pkg/dashboard"
-	"zero-trust-auth/pkg/detector"
-	"zero-trust-auth/pkg/scanner"
-	"zero-trust-auth/pkg/server"
-	"zero-trust-auth/pkg/sshconfig"
-	"zero-trust-auth/pkg/tunnel"
+	"zero-trust-dashboard/pkg/dashboard"
+	"zero-trust-dashboard/pkg/detector"
+	"zero-trust-dashboard/pkg/scanner"
+	"zero-trust-dashboard/pkg/server"
+	"zero-trust-dashboard/pkg/sshconfig"
+	"zero-trust-dashboard/pkg/tunnel"
 )
 
 func main() {

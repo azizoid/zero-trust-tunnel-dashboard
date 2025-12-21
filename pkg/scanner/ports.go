@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"zero-trust-auth/pkg/ssh"
+	"zero-trust-dashboard/pkg/ssh"
 )
 
 // Scanner scans for open ports on a remote server via SSH

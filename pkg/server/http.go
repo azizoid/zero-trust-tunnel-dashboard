@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"zero-trust-auth/pkg/detector"
-	"zero-trust-auth/pkg/scanner"
+	"zero-trust-dashboard/pkg/detector"
+	"zero-trust-dashboard/pkg/scanner"
 )
 
 // Server handles HTTP requests for the dashboard
