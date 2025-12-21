@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/azizoid/zero-trust-dashboard/pkg/dashboard"
-	"github.com/azizoid/zero-trust-dashboard/pkg/detector"
-	"github.com/azizoid/zero-trust-dashboard/pkg/scanner"
-	"github.com/azizoid/zero-trust-dashboard/pkg/server"
-	"github.com/azizoid/zero-trust-dashboard/pkg/sshconfig"
-	"github.com/azizoid/zero-trust-dashboard/pkg/tunnel"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/dashboard"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/detector"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/scanner"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/server"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/sshconfig"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/tunnel"
 )
 
 func main() {

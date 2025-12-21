@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"strings"
 
-	"github.com/azizoid/zero-trust-dashboard/pkg/detector"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/detector"
 )
 
 type Generator struct {

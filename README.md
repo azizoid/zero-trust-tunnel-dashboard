@@ -46,7 +46,7 @@ Then you can simply run:
 
 ```bash
 # Clone the repository
-git clone https://github.com/azizoid/zero-trust-dashboard.git
+git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
 cd dashboard
 
 # Build the tool
@@ -71,7 +71,7 @@ go build -o tunnel-dash ./cmd/tunnel-dash
 
 ```bash
 # Clone the repository
-git clone https://github.com/azizoid/zero-trust-dashboard.git
+git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
 cd dashboard
 
 # Build the tool

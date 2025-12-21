@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/azizoid/zero-trust-dashboard/pkg/detector"
-	"github.com/azizoid/zero-trust-dashboard/pkg/scanner"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/detector"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/scanner"
 )
 
 type Server struct {
