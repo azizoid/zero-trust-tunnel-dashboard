@@ -358,7 +358,7 @@ func main() {
 	}
 
 	dashGen := dashboard.NewGenerator(services)
-	html, err := dashGen.GenerateHTML(localPorts)
+	html, err := dashGen.GenerateHTML(localPorts, *tunnelStartPort)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating dashboard: %v\n", err)
 		os.Exit(1)

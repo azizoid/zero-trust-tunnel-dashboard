@@ -17,7 +17,7 @@ func NewGenerator(services []detector.Service) *Generator {
 	}
 }
 
-func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
+func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (string, error) {
 	tmpl := `{{define "contains"}}{{if .}}{{.}}{{end}}{{end}}
 <!DOCTYPE html>
 <html lang="en">
@@ -620,7 +620,7 @@ func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
 		if svc.Port > 0 && !isProxied {
 			if lp, exists := localPorts[svc.Port]; exists {
 				localPort = lp
-				if localPort == 9000 {
+				if localPort == tunnelStartPort {
 					serviceURL = ""
 					localPort = 0
 				} else if serviceURL == "" {
@@ -632,6 +632,11 @@ func (g *Generator) GenerateHTML(localPorts map[int]int) (string, error) {
 		}
 		
 		if isProxied {
+			localPort = 0
+		}
+		
+		if strings.Contains(serviceURL, fmt.Sprintf(":%d", tunnelStartPort)) || localPort == tunnelStartPort {
+			serviceURL = ""
 			localPort = 0
 		}
 		
