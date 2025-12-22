@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-12-23
+
+### Changed
+- Refactored dashboard generator for better maintainability and testability
+- Separated view model logic from rendering
+- Moved HTML template to embedded file
+- Improved service access resolution logic
+- Refactored Docker service detection with matcher table pattern
+- Centralized port parsing logic
+- Removed URL generation from detector (zero-trust principle)
+- Improved error handling for SSH commands
+- Simplified CI workflow to single Go version (1.23)
+- Updated minimum Go version requirement to 1.23
+- Improved CI caching and performance
+- Fixed golangci-lint configuration for v2.7.2 compatibility
+
+### Fixed
+- Dashboard internal service counting logic
+- Network name normalization for consistent grouping
+- Unused parameter warnings in tests
+
+## [1.1.1] - Previous release
+
 ### Added
 - Version information support (`--version` flag)
 - Security policy documentation (SECURITY.md)
@@ -35,7 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Localhost-only binding for tunnels and dashboard
 - SSH key authentication support
 
-[Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.1.1...v1.2.0
+[1.1.1]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.1.0...v1.1.1
 [0.1.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/releases/tag/v0.1.0
 
 
