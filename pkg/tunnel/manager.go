@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/ssh"
 )
 
 type Manager struct {
@@ -14,6 +16,7 @@ type Manager struct {
 	keyPath      string
 	useHostAlias bool
 	hostAlias    string
+	insecure     bool
 	tunnels      map[int]*Tunnel
 	tunnelsMu    sync.RWMutex
 	localPorts   map[int]int
@@ -54,6 +57,10 @@ func NewManagerWithHost(hostAlias string, startPort int) *Manager {
 	}
 }
 
+func (m *Manager) SetInsecure(insecure bool) {
+	m.insecure = insecure
+}
+
 func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 	m.tunnelsMu.Lock()
 	defer m.tunnelsMu.Unlock()
@@ -75,24 +82,17 @@ func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	args := []string{
-		"-L", fmt.Sprintf("%d:localhost:%d", localPort, remotePort),
-		"-N",
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "LogLevel=ERROR",
+	// Use ssh.Client to build the command with proper config
+	sshConfig := ssh.Config{
+		Server:       m.server,
+		User:         m.user,
+		KeyPath:      m.keyPath,
+		UseHostAlias: m.useHostAlias,
+		HostAlias:    m.hostAlias,
+		Insecure:     m.insecure,
 	}
-
-	if m.useHostAlias {
-		args = append(args, m.hostAlias)
-	} else {
-		if m.keyPath != "" {
-			args = append(args, "-i", m.keyPath)
-		}
-		args = append(args, fmt.Sprintf("%s@%s", m.user, m.server))
-	}
-
-	cmd := exec.CommandContext(ctx, "ssh", args...)
+	sshClient := ssh.NewClient(sshConfig)
+	cmd := sshClient.BuildTunnelCommand(ctx, localPort, remotePort)
 
 	tunnel := &Tunnel{
 		RemotePort: remotePort,

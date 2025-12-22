@@ -10,29 +10,50 @@ import (
 )
 
 type Scanner struct {
-	sshClient *ssh.Client
+	sshClient    *ssh.Client
+	server       string
+	user         string
+	keyPath      string
+	useHostAlias bool
+	hostAlias    string
+	insecure     bool
 }
 
 func NewScanner(server, user, keyPath string) *Scanner {
-	config := ssh.Config{
-		Server:       server,
-		User:         user,
-		KeyPath:      keyPath,
-		UseHostAlias: false,
+	s := &Scanner{
+		server:       server,
+		user:         user,
+		keyPath:      keyPath,
+		useHostAlias: false,
 	}
-	return &Scanner{
-		sshClient: ssh.NewClient(config),
-	}
+	s.initClient()
+	return s
 }
 
 func NewScannerWithHost(hostAlias string) *Scanner {
+	s := &Scanner{
+		useHostAlias: true,
+		hostAlias:    hostAlias,
+	}
+	s.initClient()
+	return s
+}
+
+func (s *Scanner) SetInsecure(insecure bool) {
+	s.insecure = insecure
+	s.initClient()
+}
+
+func (s *Scanner) initClient() {
 	config := ssh.Config{
-		UseHostAlias: true,
-		HostAlias:    hostAlias,
+		Server:       s.server,
+		User:         s.user,
+		KeyPath:      s.keyPath,
+		UseHostAlias: s.useHostAlias,
+		HostAlias:    s.hostAlias,
+		Insecure:     s.insecure,
 	}
-	return &Scanner{
-		sshClient: ssh.NewClient(config),
-	}
+	s.sshClient = ssh.NewClient(config)
 }
 
 func (s *Scanner) ScanPorts(portRange string) ([]int, error) {
