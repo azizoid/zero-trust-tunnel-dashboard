@@ -42,6 +42,7 @@ func (s *Server) Start() error {
 	return http.ListenAndServe(addr, nil)
 }
 
+// UpdateServices updates the list of services dynamically.
 func (s *Server) UpdateServices(services []detector.Service) {
 	s.services = services
 }
@@ -102,7 +103,7 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 	}) // Ignore encode error
 }
 
-func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":   "healthy",

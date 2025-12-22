@@ -90,7 +90,7 @@ func TestGuessServiceByPort(t *testing.T) {
 }
 
 func TestIdentifyServiceFromResponse_Grafana(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("X-Grafana-Version", "9.5.0")
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -127,7 +127,7 @@ func TestIdentifyServiceFromResponse_Grafana(t *testing.T) {
 }
 
 func TestIdentifyServiceFromResponse_Prometheus(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("# HELP test_metric\n# TYPE test_metric counter")) //nolint:errcheck // Ignore write error in test
@@ -161,7 +161,7 @@ func TestIdentifyServiceFromResponse_Prometheus(t *testing.T) {
 }
 
 func TestIdentifyServiceFromResponse_JSONAPI(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck // Ignore write error in test

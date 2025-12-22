@@ -25,8 +25,7 @@ func Info() string {
 		Version, Commit, BuildDate, runtime.Version())
 }
 
-// Short returns a short version string
+// Short returns a short version string.
 func Short() string {
 	return Version
 }
-

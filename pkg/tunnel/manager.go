@@ -121,6 +121,7 @@ func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 	return localPort, nil
 }
 
+// GetLocalPort returns the local port mapping for a given remote port.
 func (m *Manager) GetLocalPort(remotePort int) (int, bool) {
 	m.portsMu.RLock()
 	defer m.portsMu.RUnlock()
@@ -128,6 +129,7 @@ func (m *Manager) GetLocalPort(remotePort int) (int, bool) {
 	return localPort, exists
 }
 
+// CloseTunnel closes a specific tunnel by remote port.
 func (m *Manager) CloseTunnel(remotePort int) error {
 	m.tunnelsMu.Lock()
 	defer m.tunnelsMu.Unlock()
@@ -167,6 +169,7 @@ func (m *Manager) CloseAll() {
 	m.portsMu.Unlock()
 }
 
+// HealthCheck verifies if a tunnel is still active.
 func (m *Manager) HealthCheck(remotePort int) bool {
 	m.tunnelsMu.RLock()
 	defer m.tunnelsMu.RUnlock()

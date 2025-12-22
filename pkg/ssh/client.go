@@ -27,6 +27,7 @@ func (c *Client) BuildCommand(remoteCmd string) *exec.Cmd {
 	return exec.Command("ssh", args...)
 }
 
+// BuildCommandWithContext builds an SSH command with context support for cancellation.
 func (c *Client) BuildCommandWithContext(ctx context.Context, remoteCmd string) *exec.Cmd {
 	args := c.buildSSHArgs(remoteCmd)
 	return exec.CommandContext(ctx, "ssh", args...)

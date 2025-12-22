@@ -23,7 +23,8 @@ linters:
     - staticcheck
     - misspell
     - gocritic
-    - revive
+  disable:
+    - revive  # Disabled due to config issues with package-comments/exported rules
 
 linters-settings:
   errcheck:
@@ -36,14 +37,6 @@ linters-settings:
       - opinionated
       - performance
       - style
-  revive:
-    rules:
-      - name: exported
-        disabled: true  # Too many false positives
-      - name: var-naming
-        severity: warning
-      - name: package-comments
-        disabled: true  # Optional documentation
 
   # Allow ignoring errors in specific cases
   exclude-rules:

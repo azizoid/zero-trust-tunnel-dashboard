@@ -82,6 +82,7 @@ func (d *Detector) DetectServicesFromDocker(ports []int, dockerServices map[int]
 	return services
 }
 
+// DetectAllDockerContainers detects services from all Docker containers, including those without exposed ports.
 func (d *Detector) DetectAllDockerContainers(allContainers []*DockerService) []Service {
 	var services []Service
 
