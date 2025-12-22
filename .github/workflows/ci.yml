@@ -38,6 +38,17 @@ jobs:
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./pkg/...
       
+      - name: Run benchmarks
+        if: matrix.go-version == '1.23'
+        run: go test -bench=. -benchmem ./pkg/... | tee benchmark.txt
+      
+      - name: Upload benchmark results
+        if: matrix.go-version == '1.23'
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark.txt
+      
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         if: matrix.go-version == '1.23'
@@ -99,7 +110,7 @@ jobs:
           go-version: '1.23'
       
       - name: Build
-        run: go build -o tunnel-dash ./cmd/tunnel-dash
+        run: go build -trimpath -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Version=dev -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Commit=$(git rev-parse --short HEAD) -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o tunnel-dash ./cmd/tunnel-dash
       
       - name: Verify binary
         run: |
@@ -108,4 +119,16 @@ jobs:
       - name: Test version flag
         run: |
           ./tunnel-dash --version || exit 1
+      
+      - name: Verify reproducible build
+        run: |
+          # Build twice and compare checksums
+          go build -trimpath -buildvcs=false -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Version=test -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Commit=abc123 -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.BuildDate=2024-01-01T00:00:00Z" -o tunnel-dash-1 ./cmd/tunnel-dash
+          go build -trimpath -buildvcs=false -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Version=test -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Commit=abc123 -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.BuildDate=2024-01-01T00:00:00Z" -o tunnel-dash-2 ./cmd/tunnel-dash
+          sha256sum tunnel-dash-1 tunnel-dash-2
+          if [ "$(sha256sum tunnel-dash-1 | cut -d' ' -f1)" != "$(sha256sum tunnel-dash-2 | cut -d' ' -f1)" ]; then
+            echo "ERROR: Builds are not reproducible!"
+            exit 1
+          fi
+          echo "✓ Builds are reproducible"
 

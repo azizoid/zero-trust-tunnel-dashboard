@@ -1,5 +1,9 @@
 # Zero-Trust Tunnel Dashboard
 
+[![CI](https://github.com/azizoid/zero-trust-tunnel-dashboard/workflows/CI/badge.svg)](https://github.com/azizoid/zero-trust-tunnel-dashboard/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/azizoid/zero-trust-tunnel-dashboard)](https://goreportcard.com/report/github.com/azizoid/zero-trust-tunnel-dashboard)
+[![codecov](https://codecov.io/gh/azizoid/zero-trust-tunnel-dashboard/branch/main/graph/badge.svg)](https://codecov.io/gh/azizoid/zero-trust-tunnel-dashboard)
+
 A Go-based CLI tool that automates SSH tunnel creation, port scanning, service detection, and provides a beautiful dashboard for accessing closed services (like Grafana, Prometheus, etc.) on remote servers through zero-trust tunnels.
 
 ## Problem Statement
@@ -79,6 +83,20 @@ go build -o tunnel-dash ./cmd/tunnel-dash
 
 ### Build from Source
 
+**Using Make (Recommended):**
+```bash
+# Clone the repository
+git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
+cd zero-trust-tunnel-dashboard
+
+# Build the tool
+make build
+
+# The binary is now ready to use
+./tunnel-dash --help
+```
+
+**Using Go directly:**
 ```bash
 # Clone the repository
 git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
@@ -91,10 +109,24 @@ go build -o tunnel-dash ./cmd/tunnel-dash
 ./tunnel-dash --help
 ```
 
+**Reproducible Build:**
+```bash
+# Build with reproducible flags (deterministic binary)
+make build-reproducible
+```
+
 ### Build with Version Information
 
-To build with version, commit, and build date information:
+**Using Make:**
+```bash
+# Build with automatic version detection
+make build
 
+# Or specify version explicitly
+VERSION=v0.1.0 make build
+```
+
+**Using Go directly:**
 ```bash
 VERSION="v0.1.0"
 COMMIT=$(git rev-parse --short HEAD)
@@ -104,6 +136,19 @@ go build -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version
 
 # Verify version
 ./tunnel-dash --version
+```
+
+### Development Commands
+
+The project includes a `Makefile` with common development tasks:
+
+```bash
+make test        # Run tests
+make bench       # Run benchmarks
+make lint        # Run linter
+make vulncheck   # Check for vulnerabilities
+make clean       # Clean build artifacts
+make help        # Show all available commands
 ```
 
 ## Usage
@@ -335,6 +380,31 @@ See [SECURITY.md](SECURITY.md) for our security policy and reporting guidelines.
 - Services may not be HTTP/HTTPS based
 - Check firewall rules on the remote server
 - Verify services are actually running on the detected ports
+
+## Performance
+
+The tool is designed for efficiency. Key performance characteristics:
+
+- **Port Scanning**: Parses port lists in microseconds
+- **Service Detection**: HTTP probes with configurable timeouts (default 3s)
+- **SSH Config Parsing**: Fast parsing of SSH configuration files
+- **Memory Usage**: Minimal memory footprint, suitable for long-running sessions
+
+### Benchmarks
+
+Run benchmarks with:
+```bash
+go test -bench=. -benchmem ./pkg/...
+```
+
+Example results (Apple M4):
+```
+BenchmarkParsePortRange-10           15662553    77.46 ns/op
+BenchmarkDeduplicatePorts-10          13049281    91.92 ns/op
+BenchmarkParseSSOutput-10              892759  1383 ns/op
+BenchmarkParseSSHConfig-10           1642608   715.6 ns/op
+BenchmarkDetectServices-10            1817655   660.3 ns/op
+```
 
 ## License
 
