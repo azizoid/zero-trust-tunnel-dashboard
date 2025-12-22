@@ -34,7 +34,7 @@ This tool solves these problems by providing **automated zero-trust tunnel acces
 
 ## Prerequisites
 
-- Go 1.21 or later
+- Go 1.23 or later
 - SSH access to the target server
 - `ss` or `netstat` command available on the remote server
 
