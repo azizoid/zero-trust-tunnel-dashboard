@@ -98,11 +98,55 @@ func TestBuildCommandWithHostAlias(t *testing.T) {
 	}
 }
 
+func TestBuildCommandSecure(t *testing.T) {
+	config := Config{
+		Server:   "example.com",
+		User:     "testuser",
+		Insecure: false,
+	}
+
+	client := NewClient(config)
+	cmd := client.BuildCommand("ls")
+
+	for _, arg := range cmd.Args {
+		if arg == "-o" || strings.Contains(arg, "StrictHostKeyChecking") {
+			if strings.Contains(arg, "StrictHostKeyChecking=no") {
+				t.Error("Found StrictHostKeyChecking=no in secure mode (should be absent)")
+			}
+		}
+	}
+}
+
+func TestBuildCommandInsecure(t *testing.T) {
+	config := Config{
+		Server:   "example.com",
+		User:     "testuser",
+		Insecure: true,
+	}
+
+	client := NewClient(config)
+	cmd := client.BuildCommand("ls")
+
+	foundInsecure := false
+	args := cmd.Args
+	for i, arg := range args {
+		if arg == "-o" && i+1 < len(args) && args[i+1] == "StrictHostKeyChecking=no" {
+			foundInsecure = true
+			break
+		}
+	}
+
+	if !foundInsecure {
+		t.Error("Did not find StrictHostKeyChecking=no in insecure mode")
+	}
+}
+
 func TestBuildTunnelCommand(t *testing.T) {
 	config := Config{
-		Server:  "example.com",
-		User:    "testuser",
-		KeyPath: "/path/to/key",
+		Server:   "example.com",
+		User:     "testuser",
+		KeyPath:  "/path/to/key",
+		Insecure: true,
 	}
 
 	client := NewClient(config)

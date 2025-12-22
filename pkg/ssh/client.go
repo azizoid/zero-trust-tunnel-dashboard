@@ -12,6 +12,7 @@ type Config struct {
 	KeyPath      string
 	UseHostAlias bool
 	HostAlias    string
+	Insecure     bool
 }
 
 type Client struct {
@@ -37,10 +38,16 @@ func (c *Client) BuildTunnelCommand(ctx context.Context, localPort, remotePort i
 	args := []string{
 		"-L", fmt.Sprintf("%d:localhost:%d", localPort, remotePort),
 		"-N",
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "LogLevel=ERROR",
 	}
+
+	if c.config.Insecure {
+		args = append(args,
+			"-o", "StrictHostKeyChecking=no",
+			"-o", "UserKnownHostsFile=/dev/null",
+		)
+	}
+
+	args = append(args, "-o", "LogLevel=ERROR")
 
 	if c.config.UseHostAlias {
 		args = append(args, c.config.HostAlias)
@@ -55,11 +62,16 @@ func (c *Client) BuildTunnelCommand(ctx context.Context, localPort, remotePort i
 }
 
 func (c *Client) buildSSHArgs(remoteCmd string) []string {
-	args := []string{
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "LogLevel=ERROR",
+	var args []string
+
+	if c.config.Insecure {
+		args = append(args,
+			"-o", "StrictHostKeyChecking=no",
+			"-o", "UserKnownHostsFile=/dev/null",
+		)
 	}
+
+	args = append(args, "-o", "LogLevel=ERROR")
 
 	if c.config.UseHostAlias {
 		args = append(args, c.config.HostAlias, remoteCmd)
