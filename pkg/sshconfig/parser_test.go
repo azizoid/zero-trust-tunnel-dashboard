@@ -21,15 +21,17 @@ Host another-server
     User anotheruser
 `
 
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
+	err := os.WriteFile(configPath, []byte(configContent), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
 	originalEnv := os.Getenv("SSH_CONFIG")
-	defer os.Setenv("SSH_CONFIG", originalEnv)
+	defer func() {
+		_ = os.Setenv("SSH_CONFIG", originalEnv) // Ignore setenv error in test
+	}()
 
-	os.Setenv("SSH_CONFIG", configPath)
+	_ = os.Setenv("SSH_CONFIG", configPath) // Ignore setenv error in test
 
 	config, err := ParseSSHConfig("test-server")
 	if err != nil {
@@ -64,15 +66,17 @@ Host test-server
     User testuser
 `
 
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
+	err := os.WriteFile(configPath, []byte(configContent), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
 	originalEnv := os.Getenv("SSH_CONFIG")
-	defer os.Setenv("SSH_CONFIG", originalEnv)
+	defer func() {
+		_ = os.Setenv("SSH_CONFIG", originalEnv) // Ignore setenv error in test
+	}()
 
-	os.Setenv("SSH_CONFIG", configPath)
+	_ = os.Setenv("SSH_CONFIG", configPath) // Ignore setenv error in test
 
 	config, err := ParseSSHConfig("test-server")
 	if err != nil {
@@ -93,15 +97,17 @@ func TestParseSSHConfig_DefaultPort(t *testing.T) {
     User testuser
 `
 
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
+	err := os.WriteFile(configPath, []byte(configContent), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
 	originalEnv := os.Getenv("SSH_CONFIG")
-	defer os.Setenv("SSH_CONFIG", originalEnv)
+	defer func() {
+		_ = os.Setenv("SSH_CONFIG", originalEnv) // Ignore setenv error in test
+	}()
 
-	os.Setenv("SSH_CONFIG", configPath)
+	_ = os.Setenv("SSH_CONFIG", configPath) // Ignore setenv error in test
 
 	config, err := ParseSSHConfig("test-server")
 	if err != nil {
@@ -121,15 +127,17 @@ func TestParseSSHConfig_NonExistentHost(t *testing.T) {
     HostName example.com
 `
 
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
+	err := os.WriteFile(configPath, []byte(configContent), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
 	originalEnv := os.Getenv("SSH_CONFIG")
-	defer os.Setenv("SSH_CONFIG", originalEnv)
+	defer func() {
+		_ = os.Setenv("SSH_CONFIG", originalEnv) // Ignore setenv error in test
+	}()
 
-	os.Setenv("SSH_CONFIG", configPath)
+	_ = os.Setenv("SSH_CONFIG", configPath) // Ignore setenv error in test
 
 	config, err := ParseSSHConfig("non-existent")
 	if err != nil {
@@ -144,4 +152,3 @@ func TestParseSSHConfig_NonExistentHost(t *testing.T) {
 		t.Errorf("Expected HostName to be 'non-existent', got '%s'", config.HostName)
 	}
 }
-

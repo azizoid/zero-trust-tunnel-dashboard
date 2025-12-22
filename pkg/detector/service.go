@@ -8,22 +8,19 @@ import (
 	"time"
 )
 
-
 type Service struct {
 	Port        int
 	Name        string
 	Type        string
 	URL         string
 	Description string
-	Domain      string 
-	Network     string 
+	Domain      string
+	Network     string
 }
-
 
 type Detector struct {
 	timeout time.Duration
 }
-
 
 func NewDetector(timeout time.Duration) *Detector {
 	if timeout == 0 {
@@ -31,8 +28,6 @@ func NewDetector(timeout time.Duration) *Detector {
 	}
 	return &Detector{timeout: timeout}
 }
-
-
 
 func (d *Detector) DetectServices(ports []int, dockerServices map[int]*DockerService) []Service {
 	var services []Service
@@ -63,7 +58,6 @@ func (d *Detector) DetectServices(ports []int, dockerServices map[int]*DockerSer
 	return services
 }
 
-
 func (d *Detector) DetectServicesFromDocker(ports []int, dockerServices map[int]*DockerService) []Service {
 	var services []Service
 
@@ -88,7 +82,6 @@ func (d *Detector) DetectServicesFromDocker(ports []int, dockerServices map[int]
 	return services
 }
 
-
 func (d *Detector) DetectAllDockerContainers(allContainers []*DockerService) []Service {
 	var services []Service
 
@@ -106,7 +99,6 @@ func (d *Detector) DetectAllDockerContainers(allContainers []*DockerService) []S
 
 	return services
 }
-
 
 func (d *Detector) probePort(client *http.Client, port int) *Service {
 	service := d.tryHTTP(client, port, false)
@@ -141,7 +133,6 @@ func (d *Detector) probePort(client *http.Client, port int) *Service {
 	}
 }
 
-
 func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Service {
 	protocol := "http"
 	if useHTTPS {
@@ -150,7 +141,7 @@ func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Servic
 
 	url := fmt.Sprintf("%s://localhost:%d", protocol, port)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, http.NoBody)
 	if err != nil {
 		return nil
 	}
@@ -163,7 +154,9 @@ func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Servic
 		}
 		return nil
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close() //nolint:errcheck // Ignore close error
+	}()
 
 	service := d.identifyServiceFromResponse(resp, port, protocol)
 	if service != nil {
@@ -173,7 +166,6 @@ func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Servic
 	return nil
 }
 
-
 func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool) *Service {
 	protocol := "http"
 	if useHTTPS {
@@ -181,10 +173,10 @@ func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool
 	}
 
 	commonPaths := []string{"/", "/login", "/api/health", "/api", "/api/v1", "/health", "/status", "/metrics", "/graphql"}
-	
+
 	for _, path := range commonPaths {
 		url := fmt.Sprintf("%s://localhost:%d%s", protocol, port, path)
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest("GET", url, http.NoBody)
 		if err != nil {
 			continue
 		}
@@ -193,19 +185,20 @@ func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool
 		if err != nil {
 			continue
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode < 500 {
 			service := d.identifyServiceFromResponse(resp, port, protocol)
+			_ = resp.Body.Close() //nolint:errcheck // Ignore close error
 			if service != nil && service.Type != "unknown" {
 				return service
 			}
+		} else {
+			_ = resp.Body.Close() //nolint:errcheck // Ignore close error
 		}
 	}
 
 	return nil
 }
-
 
 func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, protocol string) *Service {
 	service := &Service{
@@ -213,7 +206,10 @@ func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, pr
 		URL:  fmt.Sprintf("%s://localhost:%d", protocol, port),
 	}
 
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2048))
+	if err != nil {
+		body = []byte{} // Use empty body on read error
+	}
 	bodyStr := strings.ToLower(string(body))
 
 	grafanaVersion := resp.Header.Get("X-Grafana-Version")
@@ -224,7 +220,7 @@ func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, pr
 		return service
 	}
 
-	if strings.Contains(bodyStr, "grafana") || 
+	if strings.Contains(bodyStr, "grafana") ||
 		strings.Contains(bodyStr, "grafana-app") ||
 		strings.Contains(bodyStr, "login") && strings.Contains(bodyStr, "grafana") ||
 		resp.Header.Get("Set-Cookie") != "" && strings.Contains(strings.ToLower(resp.Header.Get("Set-Cookie")), "grafana") {
@@ -297,30 +293,29 @@ func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, pr
 	return nil
 }
 
-
 func (d *Detector) guessServiceByPort(port int) *Service {
 	portMap := map[int]*Service{
-		3000: {Name: "Node.js Dev Server", Type: "webapp", Description: "Common port for Node.js development servers"},
-		3001: {Name: "Alternative Web Service", Type: "web", Description: "Common alternative port for web services"},
-		8080: {Name: "HTTP Proxy/Web Server", Type: "web", Description: "Common HTTP alternative port"},
-		8081: {Name: "HTTP Alternative", Type: "web", Description: "Common HTTP alternative port"},
-		9090: {Name: "Prometheus", Type: "prometheus", Description: "Default Prometheus port"},
-		9091: {Name: "Prometheus Alternative", Type: "prometheus", Description: "Alternative Prometheus port"},
-		8000: {Name: "Python HTTP Server", Type: "web", Description: "Common Python development server port"},
-		8001: {Name: "Python HTTP Alternative", Type: "web", Description: "Alternative Python server port"},
-		5000: {Name: "Flask/Development Server", Type: "web", Description: "Common Flask development port"},
-		5001: {Name: "Flask Alternative", Type: "web", Description: "Alternative Flask port"},
-		4000: {Name: "Development Server", Type: "web", Description: "Common development server port"},
-		7000: {Name: "Development Server", Type: "web", Description: "Common development server port"},
-		9000: {Name: "SonarQube/Development", Type: "web", Description: "Common for SonarQube or development servers"},
-		8888: {Name: "Jupyter Notebook", Type: "jupyter", Description: "Common Jupyter Notebook port"},
-		5601: {Name: "Kibana", Type: "kibana", Description: "Default Kibana port"},
-		9200: {Name: "Elasticsearch", Type: "elasticsearch", Description: "Default Elasticsearch port"},
+		3000:  {Name: "Node.js Dev Server", Type: "webapp", Description: "Common port for Node.js development servers"},
+		3001:  {Name: "Alternative Web Service", Type: "web", Description: "Common alternative port for web services"},
+		8080:  {Name: "HTTP Proxy/Web Server", Type: "web", Description: "Common HTTP alternative port"},
+		8081:  {Name: "HTTP Alternative", Type: "web", Description: "Common HTTP alternative port"},
+		9090:  {Name: "Prometheus", Type: "prometheus", Description: "Default Prometheus port"},
+		9091:  {Name: "Prometheus Alternative", Type: "prometheus", Description: "Alternative Prometheus port"},
+		8000:  {Name: "Python HTTP Server", Type: "web", Description: "Common Python development server port"},
+		8001:  {Name: "Python HTTP Alternative", Type: "web", Description: "Alternative Python server port"},
+		5000:  {Name: "Flask/Development Server", Type: "web", Description: "Common Flask development port"},
+		5001:  {Name: "Flask Alternative", Type: "web", Description: "Alternative Flask port"},
+		4000:  {Name: "Development Server", Type: "web", Description: "Common development server port"},
+		7000:  {Name: "Development Server", Type: "web", Description: "Common development server port"},
+		9000:  {Name: "SonarQube/Development", Type: "web", Description: "Common for SonarQube or development servers"},
+		8888:  {Name: "Jupyter Notebook", Type: "jupyter", Description: "Common Jupyter Notebook port"},
+		5601:  {Name: "Kibana", Type: "kibana", Description: "Default Kibana port"},
+		9200:  {Name: "Elasticsearch", Type: "elasticsearch", Description: "Default Elasticsearch port"},
 		15672: {Name: "RabbitMQ Management", Type: "rabbitmq", Description: "RabbitMQ Management UI"},
-		6379: {Name: "Redis", Type: "redis", Description: "Default Redis port"},
+		6379:  {Name: "Redis", Type: "redis", Description: "Default Redis port"},
 		27017: {Name: "MongoDB", Type: "mongodb", Description: "Default MongoDB port"},
-		5432: {Name: "PostgreSQL", Type: "postgres", Description: "Default PostgreSQL port"},
-		3306: {Name: "MySQL", Type: "mysql", Description: "Default MySQL port"},
+		5432:  {Name: "PostgreSQL", Type: "postgres", Description: "Default PostgreSQL port"},
+		3306:  {Name: "MySQL", Type: "mysql", Description: "Default MySQL port"},
 	}
 
 	if svc, exists := portMap[port]; exists {
@@ -335,4 +330,3 @@ func (d *Detector) guessServiceByPort(port int) *Service {
 
 	return nil
 }
-

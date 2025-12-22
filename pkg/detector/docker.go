@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-
 type DockerService struct {
 	ContainerName string
 	Image         string
@@ -15,9 +14,8 @@ type DockerService struct {
 	PortMapping   string
 	Network       string
 	HasPorts      bool
-	ExposedToHost bool 
+	ExposedToHost bool
 }
-
 
 func DetectDockerServices(server, user, keyPath string, useHostAlias bool, hostAlias string) (map[int]*DockerService, error) {
 	var cmd *exec.Cmd
@@ -51,7 +49,6 @@ func DetectDockerServices(server, user, keyPath string, useHostAlias bool, hostA
 	return parseDockerPS(string(output)), nil
 }
 
-
 func GetAllDockerContainers(server, user, keyPath string, useHostAlias bool, hostAlias string) ([]*DockerService, error) {
 	var cmd *exec.Cmd
 	if useHostAlias {
@@ -84,21 +81,19 @@ func GetAllDockerContainers(server, user, keyPath string, useHostAlias bool, hos
 	return parseAllDockerContainers(string(output)), nil
 }
 
-
 func parseDockerPS(output string) map[int]*DockerService {
 	services := make(map[int]*DockerService)
 	allContainers := parseAllDockerContainers(output)
-	
+
 	for _, container := range allContainers {
-		
+
 		if container.HasPorts && container.Port > 0 && container.ExposedToHost {
 			services[container.Port] = container
 		}
 	}
-	
+
 	return services
 }
-
 
 func parseAllDockerContainers(output string) []*DockerService {
 	var containers []*DockerService
@@ -135,7 +130,7 @@ func parseAllDockerContainers(output string) []*DockerService {
 			if len(match) >= 4 {
 				hostPort := match[2]
 				containerPort := match[3]
-				
+
 				port, err := parsePort(hostPort)
 				if err == nil && port > 0 {
 					foundPorts = append(foundPorts, port)
@@ -150,13 +145,13 @@ func parseAllDockerContainers(output string) []*DockerService {
 				}
 			}
 		}
-		
+
 		localhostMatches := localhostPortRegex.FindAllStringSubmatch(portsStr, -1)
 		for _, match := range localhostMatches {
 			if len(match) >= 3 {
 				hostPort := match[1]
 				containerPort := match[2]
-				
+
 				port, err := parsePort(hostPort)
 				if err == nil && port > 0 {
 					foundPorts = append(foundPorts, port)
@@ -171,7 +166,7 @@ func parseAllDockerContainers(output string) []*DockerService {
 				}
 			}
 		}
-		
+
 		containerOnlyPortRegex := regexp.MustCompile(`(\d+)/tcp`)
 		if !hasPorts {
 			containerMatches := containerOnlyPortRegex.FindAllStringSubmatch(portsStr, -1)
@@ -200,7 +195,7 @@ func parseAllDockerContainers(output string) []*DockerService {
 				})
 			}
 		}
-		
+
 		if !hasPorts {
 			containers = append(containers, &DockerService{
 				ContainerName: containerName,
@@ -222,7 +217,6 @@ func parsePort(portStr string) (int, error) {
 	_, err := fmt.Sscanf(portStr, "%d", &port)
 	return port, err
 }
-
 
 func IdentifyServiceFromDocker(dockerSvc *DockerService) *Service {
 	imageName := dockerSvc.Image
@@ -346,4 +340,3 @@ func IdentifyServiceFromDocker(dockerSvc *DockerService) *Service {
 
 	return service
 }
-

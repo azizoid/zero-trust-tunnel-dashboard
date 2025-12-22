@@ -25,4 +25,3 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("Expected Tunnel StartPort to be 9000, got %d", config.Tunnel.StartPort)
 	}
 }
-

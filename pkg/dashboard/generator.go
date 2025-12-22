@@ -3,6 +3,7 @@ package dashboard
 import (
 	"fmt"
 	"html/template"
+	"sort"
 	"strings"
 
 	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/detector"
@@ -641,6 +642,12 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 			localPort = 0
 		}
 
+		// Normalize network name for consistent grouping
+		normalizedNetwork := svc.Network
+		if normalizedNetwork != "" {
+			normalizedNetwork = normalizeNetworkName(normalizedNetwork)
+		}
+
 		serviceData = append(serviceData, ServiceData{
 			Name:        svc.Name,
 			Type:        svc.Type,
@@ -650,7 +657,7 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 			LocalPort:   localPort,
 			Icon:        icon,
 			Domain:      svc.Domain,
-			Network:     svc.Network,
+			Network:     normalizedNetwork,
 		})
 	}
 
@@ -660,16 +667,25 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 	internal := 0
 	networkSet := make(map[string]bool)
 
-	for _, svc := range serviceData {
-		if svc.URL != "" {
+	for i := range serviceData {
+		svc := serviceData[i]
+		switch {
+		case svc.URL != "":
 			accessible++
-		} else if svc.Domain != "" || strings.Contains(svc.Description, "Nginx Proxy") {
+		case svc.Domain != "":
+			// Has domain configured in Nginx -> Proxied
 			proxied++
-		} else {
+		case strings.Contains(svc.Description, "Nginx Proxy") && svc.Domain == "":
+			// Has "Nginx Proxy" in description but no domain -> Internal (matches UI logic)
+			internal++
+		default:
+			// No URL, no domain, no Nginx Proxy -> Internal
 			internal++
 		}
 		if svc.Network != "" {
-			networkSet[svc.Network] = true
+			// Normalize network name by sorting comma-separated values
+			normalizedNetwork := normalizeNetworkName(svc.Network)
+			networkSet[normalizedNetwork] = true
 		}
 	}
 
@@ -679,15 +695,17 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 	}
 
 	funcMap := template.FuncMap{
-		"contains": func(s, substr string) bool {
-			return strings.Contains(s, substr)
-		},
+		"contains": strings.Contains,
 		"groupByNetwork": func(services []ServiceData) map[string][]ServiceData {
 			grouped := make(map[string][]ServiceData)
-			for _, svc := range services {
+			for i := range services {
+				svc := services[i]
 				network := svc.Network
 				if network == "" {
 					network = "default"
+				} else {
+					// Ensure network is normalized
+					network = normalizeNetworkName(network)
 				}
 				grouped[network] = append(grouped[network], svc)
 			}
@@ -713,6 +731,32 @@ func (g *Generator) GenerateHTML(localPorts map[int]int, tunnelStartPort int) (s
 	}
 
 	return buf.String(), nil
+}
+
+func normalizeNetworkName(network string) string {
+	if network == "" {
+		return ""
+	}
+
+	// Split by comma, trim whitespace, and filter empty strings
+	parts := strings.Split(network, ",")
+	networks := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			networks = append(networks, trimmed)
+		}
+	}
+
+	if len(networks) == 0 {
+		return ""
+	}
+
+	// Sort to ensure consistent ordering
+	sort.Strings(networks)
+
+	// Join back with comma and space
+	return strings.Join(networks, ", ")
 }
 
 func (g *Generator) GenerateCLI(localPorts map[int]int) string {

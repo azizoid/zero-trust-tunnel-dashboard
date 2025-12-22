@@ -127,7 +127,7 @@ func parseNetstatOutput(output, portRange string) ([]int, error) {
 	return deduplicatePorts(ports), nil
 }
 
-func parsePortRange(portRange string) (int, int) {
+func parsePortRange(portRange string) (minPort, maxPort int) {
 	if portRange == "" {
 		return 1, 65535
 	}

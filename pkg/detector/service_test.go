@@ -99,9 +99,17 @@ func TestIdentifyServiceFromResponse_Grafana(t *testing.T) {
 	detector := NewDetector(3 * time.Second)
 	client := &http.Client{Timeout: 3 * time.Second}
 
-	req, _ := http.NewRequest("GET", server.URL, nil)
-	resp, _ := client.Do(req)
-	defer resp.Body.Close()
+	req, err := http.NewRequest("GET", server.URL, http.NoBody)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to do request: %v", err)
+	}
+	defer func() {
+		_ = resp.Body.Close() //nolint:errcheck // Ignore close error in test
+	}()
 
 	service := detector.identifyServiceFromResponse(resp, 3000, "http")
 
@@ -122,16 +130,24 @@ func TestIdentifyServiceFromResponse_Prometheus(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("# HELP test_metric\n# TYPE test_metric counter"))
+		_, _ = w.Write([]byte("# HELP test_metric\n# TYPE test_metric counter")) //nolint:errcheck // Ignore write error in test
 	}))
 	defer server.Close()
 
 	detector := NewDetector(3 * time.Second)
 	client := &http.Client{Timeout: 3 * time.Second}
 
-	req, _ := http.NewRequest("GET", server.URL+"/metrics", nil)
-	resp, _ := client.Do(req)
-	defer resp.Body.Close()
+	req, err := http.NewRequest("GET", server.URL+"/metrics", http.NoBody)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to do request: %v", err)
+	}
+	defer func() {
+		_ = resp.Body.Close() //nolint:errcheck // Ignore close error in test
+	}()
 
 	service := detector.identifyServiceFromResponse(resp, 9090, "http")
 
@@ -148,16 +164,24 @@ func TestIdentifyServiceFromResponse_JSONAPI(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck // Ignore write error in test
 	}))
 	defer server.Close()
 
 	detector := NewDetector(3 * time.Second)
 	client := &http.Client{Timeout: 3 * time.Second}
 
-	req, _ := http.NewRequest("GET", server.URL, nil)
-	resp, _ := client.Do(req)
-	defer resp.Body.Close()
+	req, err := http.NewRequest("GET", server.URL, http.NoBody)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to do request: %v", err)
+	}
+	defer func() {
+		_ = resp.Body.Close() //nolint:errcheck // Ignore close error in test
+	}()
 
 	service := detector.identifyServiceFromResponse(resp, 8080, "http")
 
@@ -311,4 +335,3 @@ func TestIdentifyServiceFromDocker(t *testing.T) {
 		})
 	}
 }
-

@@ -38,3 +38,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/releases/tag/v0.1.0
 
+

@@ -23,7 +23,7 @@ Host another-server
 	// Create a temporary config file for testing
 	// Note: This is a simplified benchmark that tests parsing logic
 	// In real usage, this would read from an actual file
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Simulate parsing by processing the config content
@@ -63,20 +63,23 @@ Host another-server
 
 func BenchmarkParseSSHConfigLarge(b *testing.B) {
 	// Simulate a large SSH config with many hosts
-	var lines []string
-	lines = append(lines, "Host example-server")
-	lines = append(lines, "    HostName example.com")
-	lines = append(lines, "    User admin")
-	
-	for i := 0; i < 100; i++ {
-		lines = append(lines, fmt.Sprintf("Host server-%d", i))
-		lines = append(lines, fmt.Sprintf("    HostName server%d.example.com", i))
-		lines = append(lines, fmt.Sprintf("    User user%d", i))
-		lines = append(lines, fmt.Sprintf("    Port %d", 2200+i))
+	lines := []string{
+		"Host example-server",
+		"    HostName example.com",
+		"    User admin",
 	}
-	
+
+	for i := 0; i < 100; i++ {
+		lines = append(lines,
+			fmt.Sprintf("Host server-%d", i),
+			fmt.Sprintf("    HostName server%d.example.com", i),
+			fmt.Sprintf("    User user%d", i),
+			fmt.Sprintf("    Port %d", 2200+i),
+		)
+	}
+
 	configContent := strings.Join(lines, "\n")
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		lines := strings.Split(configContent, "\n")
@@ -112,4 +115,3 @@ func BenchmarkParseSSHConfigLarge(b *testing.B) {
 		}
 	}
 }
-

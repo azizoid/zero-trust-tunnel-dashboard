@@ -78,6 +78,7 @@ go build -o tunnel-dash ./cmd/tunnel-dash
 ### Prerequisites
 
 - Go 1.21 or later ([install Go](https://go.dev/dl/))
+- **Recommended**: Go 1.24+ for security (fixes standard library vulnerabilities in Go 1.23.x)
 - SSH access to your target server
 - `ss` or `netstat` command available on the remote server
 

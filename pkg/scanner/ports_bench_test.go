@@ -24,7 +24,7 @@ func BenchmarkParsePortRange(b *testing.B) {
 
 func BenchmarkDeduplicatePorts(b *testing.B) {
 	ports := []int{3000, 8080, 9090, 3000, 8080, 3001, 8080, 9090, 3002}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		deduplicatePorts(ports)
@@ -44,7 +44,7 @@ LISTEN     0      128          *:5432                     *:*
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		parseSSOutput(output, portRange)
+		_, _ = parseSSOutput(output, portRange) //nolint:errcheck // Ignore error in benchmark
 	}
 }
 
@@ -62,7 +62,7 @@ tcp        0      0 0.0.0.0:5432            0.0.0.0:*               LISTEN
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		parseNetstatOutput(output, portRange)
+		_, _ = parseNetstatOutput(output, portRange) //nolint:errcheck // Ignore error in benchmark
 	}
 }
 
@@ -77,7 +77,6 @@ func BenchmarkParseSSOutputLarge(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		parseSSOutput(output, portRange)
+		_, _ = parseSSOutput(output, portRange) //nolint:errcheck // Ignore error in benchmark
 	}
 }
-

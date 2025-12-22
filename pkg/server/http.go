@@ -54,9 +54,9 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if s.html != "" {
-		w.Write([]byte(s.html))
+		_, _ = w.Write([]byte(s.html)) //nolint:errcheck // Ignore write error
 	} else {
-		fmt.Fprintf(w, "<html><body><h1>Zero-Trust Tunnel Dashboard</h1><p>Dashboard is loading...</p></body></html>")
+		_, _ = fmt.Fprintf(w, "<html><body><h1>Zero-Trust Tunnel Dashboard</h1><p>Dashboard is loading...</p></body></html>") //nolint:errcheck // Ignore write error
 	}
 }
 
@@ -67,7 +67,7 @@ func (s *Server) handleServicesAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(s.services)
+	_ = json.NewEncoder(w).Encode(s.services) //nolint:errcheck // Ignore encode error
 }
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
@@ -89,23 +89,23 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 	ports, err := s.scanner.ScanPorts(portRange)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{ //nolint:errcheck // Ignore encode error
 			"error": err.Error(),
-		})
+		}) // Ignore encode error
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"ports": ports,
 		"count": len(ports),
-	})
+	}) // Ignore encode error
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":   "healthy",
 		"services": len(s.services),
-	})
+	}) // Ignore encode error
 }

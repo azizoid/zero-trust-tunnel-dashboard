@@ -10,11 +10,11 @@ import (
 )
 
 type Config struct {
-	Host     string
-	HostName string
-	User     string
+	Host         string
+	HostName     string
+	User         string
 	IdentityFile string
-	Port     int
+	Port         int
 }
 
 func ParseSSHConfig(host string) (*Config, error) {
@@ -31,7 +31,9 @@ func ParseSSHConfig(host string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SSH config: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close() //nolint:errcheck // Ignore error on close
+	}()
 
 	config := &Config{
 		Host: host,
@@ -53,7 +55,7 @@ func ParseSSHConfig(host string) (*Config, error) {
 			if len(parts) < 2 {
 				continue
 			}
-			
+
 			hostPatterns := parts[1:]
 			matches := false
 			for _, pattern := range hostPatterns {
@@ -66,7 +68,7 @@ func ParseSSHConfig(host string) (*Config, error) {
 					break
 				}
 			}
-			
+
 			if matches {
 				inHostBlock = true
 			} else {
@@ -91,12 +93,14 @@ func ParseSSHConfig(host string) (*Config, error) {
 				config.User = value
 			case "identityfile":
 				if strings.HasPrefix(value, "~") {
-					usr, _ := user.Current()
-					value = filepath.Join(usr.HomeDir, strings.TrimPrefix(value, "~"))
+					usr, err := user.Current()
+					if err == nil {
+						value = filepath.Join(usr.HomeDir, strings.TrimPrefix(value, "~"))
+					}
 				}
 				config.IdentityFile = value
 			case "port":
-				fmt.Sscanf(value, "%d", &config.Port)
+				_, _ = fmt.Sscanf(value, "%d", &config.Port) // Ignore parse error, defaults to 22
 			}
 		}
 	}
@@ -111,4 +115,3 @@ func ParseSSHConfig(host string) (*Config, error) {
 
 	return config, nil
 }
-

@@ -6,39 +6,39 @@ import (
 	"strings"
 )
 
-func QueryNPMDatabase(nginxContainerName string, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
-	
+func QueryNPMDatabase(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
+
 	domains, err := queryNPMWithSQLite3(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
 	}
-	
+
 	domains, err = getNginxDomainsFromConfig(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
 	}
-	
+
 	domains, err = queryNPMFromHost(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
 	}
-	
+
 	return nil, nil
 }
 
-func queryNPMWithSQLite3(nginxContainerName string, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
+func queryNPMWithSQLite3(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
 	var cmd *exec.Cmd
 	dbPath := "/data/database.sqlite"
-	
+
 	query := fmt.Sprintf("SELECT domain_names FROM proxy_host WHERE (forward_host LIKE '%%%s%%' OR forward_host = '%s') AND forward_port = %d", containerName, containerName, containerPort)
-	
+
 	if useHostAlias {
 		cmd = exec.Command("ssh",
 			"-o", "StrictHostKeyChecking=no",
 			"-o", "UserKnownHostsFile=/dev/null",
 			"-o", "LogLevel=ERROR",
 			hostAlias,
-			fmt.Sprintf("docker exec %s sqlite3 %s \"%s\" 2>/dev/null || echo ''", nginxContainerName, dbPath, query))
+			fmt.Sprintf("docker exec %s sqlite3 %s %q 2>/dev/null || echo ''", nginxContainerName, dbPath, query))
 	} else {
 		args := []string{
 			"-o", "StrictHostKeyChecking=no",
@@ -49,15 +49,15 @@ func queryNPMWithSQLite3(nginxContainerName string, containerName string, contai
 			args = append(args, "-i", keyPath)
 		}
 		args = append(args, fmt.Sprintf("%s@%s", user, server),
-			fmt.Sprintf("docker exec %s sqlite3 %s \"%s\" 2>/dev/null || echo ''", nginxContainerName, dbPath, query))
+			fmt.Sprintf("docker exec %s sqlite3 %s %q 2>/dev/null || echo ''", nginxContainerName, dbPath, query))
 		cmd = exec.Command("ssh", args...)
 	}
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var domains []string
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	for _, line := range lines {
@@ -73,16 +73,16 @@ func queryNPMWithSQLite3(nginxContainerName string, containerName string, contai
 			}
 		}
 	}
-	
+
 	if len(domains) > 0 {
 		return domains, nil
 	}
 	return nil, fmt.Errorf("no domains found")
 }
 
-func queryNPMFromHost(nginxContainerName string, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
+func queryNPMFromHost(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
 	var cmd *exec.Cmd
-	
+
 	if useHostAlias {
 		cmd = exec.Command("ssh",
 			"-o", "StrictHostKeyChecking=no",
@@ -103,27 +103,27 @@ func queryNPMFromHost(nginxContainerName string, containerName string, container
 			fmt.Sprintf("docker inspect %s --format '{{range .Mounts}}{{if eq .Destination \"/data\"}}{{.Source}}{{end}}{{end}}' 2>/dev/null", nginxContainerName))
 		cmd = exec.Command("ssh", args...)
 	}
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	mountPath := strings.TrimSpace(string(output))
 	if mountPath == "" {
 		return nil, fmt.Errorf("could not find mount path")
 	}
-	
+
 	dbPath := fmt.Sprintf("%s/database.sqlite", mountPath)
 	query := fmt.Sprintf("SELECT domain_names FROM proxy_host WHERE (forward_host LIKE '%%%s%%' OR forward_host = '%s') AND forward_port = %d", containerName, containerName, containerPort)
-	
+
 	if useHostAlias {
 		cmd = exec.Command("ssh",
 			"-o", "StrictHostKeyChecking=no",
 			"-o", "UserKnownHostsFile=/dev/null",
 			"-o", "LogLevel=ERROR",
 			hostAlias,
-			fmt.Sprintf("sqlite3 %s \"%s\" 2>/dev/null || echo ''", dbPath, query))
+			fmt.Sprintf("sqlite3 %s %q 2>/dev/null || echo ''", dbPath, query))
 	} else {
 		args := []string{
 			"-o", "StrictHostKeyChecking=no",
@@ -134,15 +134,15 @@ func queryNPMFromHost(nginxContainerName string, containerName string, container
 			args = append(args, "-i", keyPath)
 		}
 		args = append(args, fmt.Sprintf("%s@%s", user, server),
-			fmt.Sprintf("sqlite3 %s \"%s\" 2>/dev/null || echo ''", dbPath, query))
+			fmt.Sprintf("sqlite3 %s %q 2>/dev/null || echo ''", dbPath, query))
 		cmd = exec.Command("ssh", args...)
 	}
-	
+
 	output, err = cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var domains []string
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	for _, line := range lines {
@@ -158,16 +158,16 @@ func queryNPMFromHost(nginxContainerName string, containerName string, container
 			}
 		}
 	}
-	
+
 	if len(domains) > 0 {
 		return domains, nil
 	}
 	return nil, fmt.Errorf("no domains found")
 }
 
-func getNginxDomainsFromConfig(nginxContainerName string, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
+func getNginxDomainsFromConfig(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
 	var cmd *exec.Cmd
-	
+
 	if useHostAlias {
 		cmd = exec.Command("ssh",
 			"-o", "StrictHostKeyChecking=no",
@@ -188,22 +188,21 @@ func getNginxDomainsFromConfig(nginxContainerName string, containerName string, 
 			fmt.Sprintf("docker exec %s find /data/nginx/proxy_host -name '*.conf' -exec grep -l '%s:%d' {} \\; 2>/dev/null | head -1 | xargs grep -oP 'server_name\\s+\\K[^;]+' 2>/dev/null || echo ''", nginxContainerName, containerName, containerPort))
 		cmd = exec.Command("ssh", args...)
 	}
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var domains []string
 	line := strings.TrimSpace(string(output))
 	if line != "" {
 		domainList := strings.Fields(line)
 		domains = append(domains, domainList...)
 	}
-	
+
 	if len(domains) > 0 {
 		return domains, nil
 	}
 	return nil, fmt.Errorf("no domains found")
 }
-

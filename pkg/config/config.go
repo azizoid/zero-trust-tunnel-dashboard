@@ -1,11 +1,11 @@
 package config
 
 type Config struct {
-	SSH          SSHConfig
-	Scan         ScanConfig
-	Dashboard    DashboardConfig
-	Detection    DetectionConfig
-	Tunnel       TunnelConfig
+	SSH       SSHConfig
+	Scan      ScanConfig
+	Dashboard DashboardConfig
+	Detection DetectionConfig
+	Tunnel    TunnelConfig
 }
 
 type SSHConfig struct {
@@ -49,4 +49,3 @@ func DefaultConfig() *Config {
 		},
 	}
 }
-

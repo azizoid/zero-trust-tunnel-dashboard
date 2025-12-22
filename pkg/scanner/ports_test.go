@@ -6,10 +6,10 @@ import (
 
 func TestParsePortRange(t *testing.T) {
 	tests := []struct {
-		name     string
+		name      string
 		portRange string
-		wantMin  int
-		wantMax  int
+		wantMin   int
+		wantMax   int
 	}{
 		{
 			name:      "valid range",
@@ -174,4 +174,3 @@ tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN`
 		}
 	}
 }
-

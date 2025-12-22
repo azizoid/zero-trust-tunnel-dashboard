@@ -1,6 +1,7 @@
 package detector
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -9,11 +10,11 @@ import (
 
 func BenchmarkIdentifyServiceFromResponse(b *testing.B) {
 	tests := []struct {
-		name     string
-		body     string
-		headers  map[string]string
-		path     string
-		status   int
+		name    string
+		body    string
+		headers map[string]string
+		path    string
+		status  int
 	}{
 		{
 			name: "Grafana",
@@ -68,18 +69,18 @@ http_requests_total 1234`,
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, tt := range tests {
-			req := httptest.NewRequest("GET", "http://localhost:8080"+tt.path, nil)
+			req := httptest.NewRequest("GET", "http://localhost:8080"+tt.path, http.NoBody)
 			w := httptest.NewRecorder()
-			
+
 			for k, v := range tt.headers {
 				w.Header().Set(k, v)
 			}
 			w.WriteHeader(tt.status)
-			w.WriteString(tt.body)
-			
+			_, _ = w.WriteString(tt.body) //nolint:errcheck // Ignore write error in benchmark
+
 			resp := w.Result()
 			resp.Request = req
-			
+
 			// Note: identifyServiceFromResponse is not exported
 			// This benchmark tests the string matching logic instead
 			bodyStr := strings.ToLower(tt.body)
@@ -92,7 +93,7 @@ http_requests_total 1234`,
 
 func BenchmarkServiceIdentificationStringContains(b *testing.B) {
 	bodyStr := strings.ToLower(`<html><body><div class="grafana-app">Grafana Dashboard</div></body></html>`)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = strings.Contains(bodyStr, "grafana") ||
@@ -104,9 +105,9 @@ func BenchmarkServiceIdentificationStringContains(b *testing.B) {
 func BenchmarkDetectServices(b *testing.B) {
 	ports := []int{3000, 8080, 9090, 8081, 8082}
 	dockerServices := make(map[int]*DockerService)
-	
+
 	detector := NewDetector(1 * time.Second)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Note: This won't actually make HTTP requests in benchmark
@@ -114,4 +115,3 @@ func BenchmarkDetectServices(b *testing.B) {
 		_ = detector.DetectServicesFromDocker(ports, dockerServices)
 	}
 }
-

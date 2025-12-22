@@ -14,12 +14,12 @@ type Manager struct {
 	keyPath      string
 	useHostAlias bool
 	hostAlias    string
-	tunnels    map[int]*Tunnel
-	tunnelsMu  sync.RWMutex
-	localPorts map[int]int
-	portsMu    sync.RWMutex
-	nextPort   int
-	startPort  int
+	tunnels      map[int]*Tunnel
+	tunnelsMu    sync.RWMutex
+	localPorts   map[int]int
+	portsMu      sync.RWMutex
+	nextPort     int
+	startPort    int
 }
 
 type Tunnel struct {
@@ -32,14 +32,14 @@ type Tunnel struct {
 
 func NewManager(server, user, keyPath string, startPort int) *Manager {
 	return &Manager{
-		server:     server,
-		user:       user,
-		keyPath:    keyPath,
+		server:       server,
+		user:         user,
+		keyPath:      keyPath,
 		useHostAlias: false,
-		tunnels:    make(map[int]*Tunnel),
-		localPorts: make(map[int]int),
-		nextPort:   startPort,
-		startPort:  startPort,
+		tunnels:      make(map[int]*Tunnel),
+		localPorts:   make(map[int]int),
+		nextPort:     startPort,
+		startPort:    startPort,
 	}
 }
 
@@ -139,7 +139,7 @@ func (m *Manager) CloseTunnel(remotePort int) error {
 
 	tunnel.cancel()
 	if tunnel.Cmd.Process != nil {
-		tunnel.Cmd.Process.Kill()
+		_ = tunnel.Cmd.Process.Kill() //nolint:errcheck // Ignore error during cleanup
 	}
 
 	delete(m.tunnels, remotePort)
@@ -157,7 +157,7 @@ func (m *Manager) CloseAll() {
 	for _, tunnel := range m.tunnels {
 		tunnel.cancel()
 		if tunnel.Cmd.Process != nil {
-			tunnel.Cmd.Process.Kill()
+			_ = tunnel.Cmd.Process.Kill() //nolint:errcheck // Ignore error during cleanup
 		}
 	}
 
@@ -182,4 +182,3 @@ func (m *Manager) HealthCheck(remotePort int) bool {
 
 	return tunnel.Cmd.ProcessState == nil || !tunnel.Cmd.ProcessState.Exited()
 }
-

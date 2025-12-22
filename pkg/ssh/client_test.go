@@ -170,4 +170,3 @@ func TestBuildTunnelCommandWithHostAlias(t *testing.T) {
 		t.Error("Host alias not found in tunnel command args")
 	}
 }
-

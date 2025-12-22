@@ -293,9 +293,9 @@ func main() {
 					if hasNginxProxy && nginxLocalPort > 0 && nginxContainerName != "" {
 						var domains []string
 						if *host != "" {
-							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host)
+							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host) //nolint:errcheck // Ignore NPM query errors
 						} else {
-							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "")
+							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "") //nolint:errcheck // Ignore NPM query errors
 						}
 
 						if len(domains) > 0 {
@@ -324,9 +324,9 @@ func main() {
 						if hasNginxProxy && nginxLocalPort > 0 && nginxContainerName != "" {
 							var domains []string
 							if *host != "" {
-								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host)
+								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host) //nolint:errcheck // Ignore NPM query errors
 							} else {
-								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "")
+								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "") //nolint:errcheck // Ignore NPM query errors
 							}
 
 							if len(domains) > 0 {
@@ -349,7 +349,6 @@ func main() {
 						servicePortMap[container.Port] = true
 					}
 				}
-			} else {
 			}
 		}
 	}

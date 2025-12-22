@@ -8,6 +8,13 @@ We actively support the following versions with security updates:
 | ------- | ------------------ |
 | 0.x.x   | :white_check_mark: |
 
+### Go Version Requirements
+
+- **Minimum**: Go 1.21
+- **Recommended**: Go 1.24+ (includes fixes for standard library vulnerabilities)
+
+Note: Go 1.23.x contains known vulnerabilities in the standard library (crypto/x509, net/http, etc.) that are fixed in Go 1.24+. We recommend upgrading to Go 1.24+ for production use.
+
 ## Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues.**
