@@ -31,6 +31,7 @@ type Tunnel struct {
 	Cmd        *exec.Cmd
 	ctx        context.Context
 	cancel     context.CancelFunc
+	errChan    chan error
 }
 
 func NewManager(server, user, keyPath string, startPort int) *Manager {
@@ -66,7 +67,17 @@ func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 	defer m.tunnelsMu.Unlock()
 
 	if tunnel, exists := m.tunnels[remotePort]; exists {
-		return tunnel.LocalPort, nil
+		// Check if existing tunnel is healthy
+		select {
+		case <-tunnel.errChan:
+			// Tunnel dead, clean up and recreate
+			m.cleanupTunnel(remotePort)
+		default:
+			if tunnel.Cmd.ProcessState == nil || !tunnel.Cmd.ProcessState.Exited() {
+				return tunnel.LocalPort, nil
+			}
+			m.cleanupTunnel(remotePort)
+		}
 	}
 
 	localPort := remotePort
@@ -100,6 +111,7 @@ func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 		Cmd:        cmd,
 		ctx:        ctx,
 		cancel:     cancel,
+		errChan:    make(chan error, 1),
 	}
 
 	if err := cmd.Start(); err != nil {
@@ -107,10 +119,16 @@ func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 		return 0, fmt.Errorf("failed to start tunnel: %w", err)
 	}
 
-	time.Sleep(500 * time.Millisecond)
-	if cmd.ProcessState != nil && cmd.ProcessState.Exited() {
+	// Start monitoring routine
+	go m.monitorTunnel(tunnel)
+
+	// Wait briefly to catch immediate failures (e.g. auth error, port in use)
+	select {
+	case err := <-tunnel.errChan:
 		cancel()
-		return 0, fmt.Errorf("tunnel failed to start")
+		return 0, fmt.Errorf("tunnel failed immediately: %w", err)
+	case <-time.After(500 * time.Millisecond):
+		// Tunnel seems stable enough for now
 	}
 
 	m.tunnels[remotePort] = tunnel
@@ -119,6 +137,34 @@ func (m *Manager) CreateTunnel(remotePort int) (int, error) {
 	m.portsMu.Unlock()
 
 	return localPort, nil
+}
+
+func (m *Manager) monitorTunnel(t *Tunnel) {
+	err := t.Cmd.Wait()
+	if err != nil {
+		// If context was canceled, it's an intentional stop
+		if t.ctx.Err() != nil {
+			return
+		}
+		t.errChan <- err
+	} else {
+		// Process exited with 0, still means tunnel closed
+		if t.ctx.Err() == nil {
+			t.errChan <- fmt.Errorf("tunnel process exited unexpectedly with code 0")
+		}
+	}
+	close(t.errChan)
+}
+
+func (m *Manager) cleanupTunnel(remotePort int) {
+	// Assumes caller holds lock
+	if t, ok := m.tunnels[remotePort]; ok {
+		delete(m.tunnels, remotePort)
+		m.portsMu.Lock()
+		delete(m.localPorts, remotePort)
+		m.portsMu.Unlock()
+		t.cancel() // Just in case
+	}
 }
 
 // GetLocalPort returns the local port mapping for a given remote port.
@@ -140,9 +186,7 @@ func (m *Manager) CloseTunnel(remotePort int) error {
 	}
 
 	tunnel.cancel()
-	if tunnel.Cmd.Process != nil {
-		_ = tunnel.Cmd.Process.Kill() //nolint:errcheck // Ignore error during cleanup
-	}
+	// No need to kill explicitly, cancel context does it for exec.CommandContext
 
 	delete(m.tunnels, remotePort)
 	m.portsMu.Lock()
@@ -158,9 +202,6 @@ func (m *Manager) CloseAll() {
 
 	for _, tunnel := range m.tunnels {
 		tunnel.cancel()
-		if tunnel.Cmd.Process != nil {
-			_ = tunnel.Cmd.Process.Kill() //nolint:errcheck // Ignore error during cleanup
-		}
 	}
 
 	m.tunnels = make(map[int]*Tunnel)
@@ -179,9 +220,10 @@ func (m *Manager) HealthCheck(remotePort int) bool {
 		return false
 	}
 
-	if tunnel.Cmd.Process == nil {
+	select {
+	case <-tunnel.errChan:
 		return false
+	default:
+		return true
 	}
-
-	return tunnel.Cmd.ProcessState == nil || !tunnel.Cmd.ProcessState.Exited()
 }
