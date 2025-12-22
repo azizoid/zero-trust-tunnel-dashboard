@@ -15,6 +15,7 @@ import (
 	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/server"
 	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/sshconfig"
 	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/tunnel"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version"
 )
 
 func main() {
@@ -27,8 +28,14 @@ func main() {
 		dashboardPort   = flag.Int("dashboard-port", 8080, "Port for the web dashboard")
 		tunnelStartPort = flag.Int("tunnel-start-port", 9000, "Starting port for local tunnel ports")
 		detectionMode   = flag.String("detection-mode", "both", "Service detection method: docker, direct, or both (default: both)")
+		showVersion     = flag.Bool("version", false, "Show version information and exit")
 	)
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(version.Info())
+		os.Exit(0)
+	}
 
 	var finalServer, finalUser, finalKey string
 

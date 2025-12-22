@@ -2,6 +2,16 @@
 
 A Go-based CLI tool that automates SSH tunnel creation, port scanning, service detection, and provides a beautiful dashboard for accessing closed services (like Grafana, Prometheus, etc.) on remote servers through zero-trust tunnels.
 
+## Problem Statement
+
+Accessing services running on remote servers (like Grafana, Prometheus, or custom web apps) typically requires:
+- Opening firewall ports (security risk)
+- Setting up VPNs (complexity overhead)
+- Using cloud-specific solutions (vendor lock-in)
+- Manual SSH tunnel management (tedious and error-prone)
+
+This tool solves these problems by providing **automated zero-trust tunnel access** - services remain behind firewalls, but are easily accessible through encrypted SSH tunnels with automatic service discovery.
+
 ## Features
 
 - **Automatic Port Scanning**: Scans remote server ports via SSH
@@ -47,7 +57,7 @@ Then you can simply run:
 ```bash
 # Clone the repository
 git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
-cd dashboard
+cd zero-trust-tunnel-dashboard
 
 # Build the tool
 go build -o tunnel-dash ./cmd/tunnel-dash
@@ -72,13 +82,28 @@ go build -o tunnel-dash ./cmd/tunnel-dash
 ```bash
 # Clone the repository
 git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
-cd dashboard
+cd zero-trust-tunnel-dashboard
 
 # Build the tool
 go build -o tunnel-dash ./cmd/tunnel-dash
 
 # The binary is now ready to use
 ./tunnel-dash --help
+```
+
+### Build with Version Information
+
+To build with version, commit, and build date information:
+
+```bash
+VERSION="v0.1.0"
+COMMIT=$(git rev-parse --short HEAD)
+BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+go build -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Version=${VERSION} -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Commit=${COMMIT} -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.BuildDate=${BUILD_DATE}" -o tunnel-dash ./cmd/tunnel-dash
+
+# Verify version
+./tunnel-dash --version
 ```
 
 ## Usage
@@ -172,6 +197,7 @@ Or with direct connection:
 | `--dashboard-port` | Port for the web dashboard | 8080 |
 | `--tunnel-start-port` | Starting port for local tunnel ports | 9000 |
 | `--detection-mode` | Service detection method: `docker`, `direct`, or `both` | both |
+| `--version` | Show version information and exit | - |
 
 **Note**: Either use `--host` (reads from SSH config) or use both `--server` and `--user` (direct connection).
 
@@ -249,12 +275,46 @@ The tool consists of several components:
 - **Dashboard Generator** (`pkg/dashboard`): Generates HTML and CLI output
 - **HTTP Server** (`pkg/server`): Serves the web dashboard
 
-## Security Notes
+## Security Model
 
-- The tool uses SSH tunnels for secure access
-- SSH host key checking is disabled for convenience (use with caution)
-- All services are accessed through localhost tunnel ports
-- The web dashboard is only accessible locally
+This tool implements a **zero-trust tunnel** approach for secure access to remote services.
+
+### Zero-Trust Principles
+
+1. **No Trust in Network**: All communication goes through encrypted SSH tunnels
+2. **No Direct Exposure**: Remote services are never exposed to the internet
+3. **Local Access Only**: Services are accessed through localhost-only tunnels
+4. **SSH Authentication Required**: Access requires valid SSH credentials
+
+### Security Features
+
+- **Encrypted Tunnels**: All traffic is encrypted via SSH
+- **Localhost Binding**: Tunnels and dashboard bind to `127.0.0.1` only
+- **No Network Exposure**: Remote services remain behind firewall
+- **SSH Key Authentication**: Uses standard SSH key-based authentication
+
+### Security Considerations
+
+⚠️ **SSH Host Key Verification**: The tool disables `StrictHostKeyChecking` for convenience. This reduces protection against man-in-the-middle attacks. In production environments or untrusted networks, consider enabling host key verification.
+
+✅ **Local Access**: The web dashboard and all tunnels are only accessible on localhost by default.
+
+✅ **Service Authentication**: This tool provides tunnel access only. Ensure downstream services (Grafana, Prometheus, etc.) have proper authentication enabled.
+
+### Threat Model
+
+For detailed information about:
+- What attacks are in scope
+- What attacks are out of scope
+- Security assumptions and boundaries
+
+See [THREAT_MODEL.md](THREAT_MODEL.md).
+
+### Reporting Security Issues
+
+**Please do not report security vulnerabilities through public GitHub issues.**
+
+See [SECURITY.md](SECURITY.md) for our security policy and reporting guidelines.
 
 ## Troubleshooting
 
