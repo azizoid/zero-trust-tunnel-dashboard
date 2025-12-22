@@ -1,6 +1,8 @@
 # golangci-lint configuration
 # See https://golangci-lint.run/usage/configuration/
 
+version: 2
+
 run:
   timeout: 5m
   tests: true
@@ -17,14 +19,8 @@ issues:
 linters:
   enable:
     - errcheck
-    - gosimple
     - govet
-    - ineffassign
     - staticcheck
-    - typecheck
-    - unused
-    - gofmt
-    - goimports
     - misspell
     - gocritic
     - revive

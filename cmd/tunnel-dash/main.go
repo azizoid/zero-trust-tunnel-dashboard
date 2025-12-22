@@ -382,7 +382,7 @@ func main() {
 		}
 	}()
 
-	fmt.Println(dashGen.GenerateCLI(localPorts))
+	fmt.Println(dashGen.GenerateCLI(localPorts, *tunnelStartPort))
 	fmt.Printf("Web dashboard available at: http://localhost:%d\n", *dashboardPort)
 	fmt.Println("\nPress Ctrl+C to stop...")
 
