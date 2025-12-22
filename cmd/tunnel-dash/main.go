@@ -28,6 +28,7 @@ func main() {
 		dashboardPort   = flag.Int("dashboard-port", 8080, "Port for the web dashboard")
 		tunnelStartPort = flag.Int("tunnel-start-port", 9000, "Starting port for local tunnel ports")
 		detectionMode   = flag.String("detection-mode", "both", "Service detection method: docker, direct, or both (default: both)")
+		insecure        = flag.Bool("insecure", false, "Disable strict host key checking (WARNING: Man-in-the-Middle risk)")
 		showVersion     = flag.Bool("version", false, "Show version information and exit")
 	)
 	flag.Parse()
@@ -88,6 +89,9 @@ func main() {
 	if finalKey != "" {
 		fmt.Printf("Key: %s\n", finalKey)
 	}
+	if *insecure {
+		fmt.Println("WARNING: Strict host key checking disabled!")
+	}
 	fmt.Printf("Scanning ports: %s\n", *scanPorts)
 	fmt.Println()
 
@@ -102,6 +106,9 @@ func main() {
 		portScanner = scanner.NewScanner(finalServer, finalUser, finalKey)
 	}
 
+	tunnelMgr.SetInsecure(*insecure)
+	portScanner.SetInsecure(*insecure)
+
 	serviceDetector := detector.NewDetector(3 * time.Second)
 
 	var ports []int
@@ -111,9 +118,9 @@ func main() {
 	if *detectionMode == "docker" || *detectionMode == "both" {
 		var err error
 		if *host != "" {
-			dockerServices, err = detector.DetectDockerServices("", "", "", true, *host)
+			dockerServices, err = detector.DetectDockerServices("", "", "", true, *host, *insecure)
 		} else {
-			dockerServices, err = detector.DetectDockerServices(finalServer, finalUser, finalKey, false, "")
+			dockerServices, err = detector.DetectDockerServices(finalServer, finalUser, finalKey, false, "", *insecure)
 		}
 
 		if err != nil {
@@ -127,9 +134,9 @@ func main() {
 
 		var err2 error
 		if *host != "" {
-			allContainers, err2 = detector.GetAllDockerContainers("", "", "", true, *host)
+			allContainers, err2 = detector.GetAllDockerContainers("", "", "", true, *host, *insecure)
 		} else {
-			allContainers, err2 = detector.GetAllDockerContainers(finalServer, finalUser, finalKey, false, "")
+			allContainers, err2 = detector.GetAllDockerContainers(finalServer, finalUser, finalKey, false, "", *insecure)
 		}
 
 		if err2 == nil {
@@ -293,9 +300,9 @@ func main() {
 					if hasNginxProxy && nginxLocalPort > 0 && nginxContainerName != "" {
 						var domains []string
 						if *host != "" {
-							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host) //nolint:errcheck // Ignore NPM query errors
+							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host, *insecure) //nolint:errcheck // Ignore NPM query errors
 						} else {
-							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "") //nolint:errcheck // Ignore NPM query errors
+							domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "", *insecure) //nolint:errcheck // Ignore NPM query errors
 						}
 
 						if len(domains) > 0 {
@@ -324,9 +331,9 @@ func main() {
 						if hasNginxProxy && nginxLocalPort > 0 && nginxContainerName != "" {
 							var domains []string
 							if *host != "" {
-								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host) //nolint:errcheck // Ignore NPM query errors
+								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, "", "", "", true, *host, *insecure) //nolint:errcheck // Ignore NPM query errors
 							} else {
-								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "") //nolint:errcheck // Ignore NPM query errors
+								domains, _ = detector.QueryNPMDatabase(nginxContainerName, container.ContainerName, container.Port, finalServer, finalUser, finalKey, false, "", *insecure) //nolint:errcheck // Ignore NPM query errors
 							}
 
 							if len(domains) > 0 {

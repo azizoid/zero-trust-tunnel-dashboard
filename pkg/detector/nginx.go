@@ -6,19 +6,19 @@ import (
 	"strings"
 )
 
-func QueryNPMDatabase(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
+func QueryNPMDatabase(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string, insecure bool) ([]string, error) {
 
-	domains, err := queryNPMWithSQLite3(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
+	domains, err := queryNPMWithSQLite3(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias, insecure)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
 	}
 
-	domains, err = getNginxDomainsFromConfig(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
+	domains, err = getNginxDomainsFromConfig(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias, insecure)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
 	}
 
-	domains, err = queryNPMFromHost(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias)
+	domains, err = queryNPMFromHost(nginxContainerName, containerName, containerPort, server, user, keyPath, useHostAlias, hostAlias, insecure)
 	if err == nil && len(domains) > 0 {
 		return domains, nil
 	}
@@ -26,25 +26,33 @@ func QueryNPMDatabase(nginxContainerName, containerName string, containerPort in
 	return nil, nil
 }
 
-func queryNPMWithSQLite3(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
+func queryNPMWithSQLite3(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string, insecure bool) ([]string, error) {
 	var cmd *exec.Cmd
 	dbPath := "/data/database.sqlite"
 
 	query := fmt.Sprintf("SELECT domain_names FROM proxy_host WHERE (forward_host LIKE '%%%s%%' OR forward_host = '%s') AND forward_port = %d", containerName, containerName, containerPort)
 
-	if useHostAlias {
-		cmd = exec.Command("ssh",
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "UserKnownHostsFile=/dev/null",
-			"-o", "LogLevel=ERROR",
-			hostAlias,
-			fmt.Sprintf("docker exec %s sqlite3 %s %q 2>/dev/null || echo ''", nginxContainerName, dbPath, query))
-	} else {
-		args := []string{
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "UserKnownHostsFile=/dev/null",
-			"-o", "LogLevel=ERROR",
+	// Helper to add insecure flags
+	addInsecureFlags := func(args []string) []string {
+		if insecure {
+			return append(args,
+				"-o", "StrictHostKeyChecking=no",
+				"-o", "UserKnownHostsFile=/dev/null",
+			)
 		}
+		return args
+	}
+
+	if useHostAlias {
+		args := []string{}
+		args = addInsecureFlags(args)
+		args = append(args, "-o", "LogLevel=ERROR", hostAlias,
+			fmt.Sprintf("docker exec %s sqlite3 %s %q 2>/dev/null || echo ''", nginxContainerName, dbPath, query))
+		cmd = exec.Command("ssh", args...)
+	} else {
+		args := []string{}
+		args = addInsecureFlags(args)
+		args = append(args, "-o", "LogLevel=ERROR")
 		if keyPath != "" {
 			args = append(args, "-i", keyPath)
 		}
@@ -80,22 +88,30 @@ func queryNPMWithSQLite3(nginxContainerName, containerName string, containerPort
 	return nil, fmt.Errorf("no domains found")
 }
 
-func queryNPMFromHost(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
+func queryNPMFromHost(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string, insecure bool) ([]string, error) {
 	var cmd *exec.Cmd
 
-	if useHostAlias {
-		cmd = exec.Command("ssh",
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "UserKnownHostsFile=/dev/null",
-			"-o", "LogLevel=ERROR",
-			hostAlias,
-			fmt.Sprintf("docker inspect %s --format '{{range .Mounts}}{{if eq .Destination \"/data\"}}{{.Source}}{{end}}{{end}}' 2>/dev/null", nginxContainerName))
-	} else {
-		args := []string{
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "UserKnownHostsFile=/dev/null",
-			"-o", "LogLevel=ERROR",
+	// Helper to add insecure flags
+	addInsecureFlags := func(args []string) []string {
+		if insecure {
+			return append(args,
+				"-o", "StrictHostKeyChecking=no",
+				"-o", "UserKnownHostsFile=/dev/null",
+			)
 		}
+		return args
+	}
+
+	if useHostAlias {
+		args := []string{}
+		args = addInsecureFlags(args)
+		args = append(args, "-o", "LogLevel=ERROR", hostAlias,
+			fmt.Sprintf("docker inspect %s --format '{{range .Mounts}}{{if eq .Destination \"/data\"}}{{.Source}}{{end}}{{end}}' 2>/dev/null", nginxContainerName))
+		cmd = exec.Command("ssh", args...)
+	} else {
+		args := []string{}
+		args = addInsecureFlags(args)
+		args = append(args, "-o", "LogLevel=ERROR")
 		if keyPath != "" {
 			args = append(args, "-i", keyPath)
 		}
@@ -118,18 +134,15 @@ func queryNPMFromHost(nginxContainerName, containerName string, containerPort in
 	query := fmt.Sprintf("SELECT domain_names FROM proxy_host WHERE (forward_host LIKE '%%%s%%' OR forward_host = '%s') AND forward_port = %d", containerName, containerName, containerPort)
 
 	if useHostAlias {
-		cmd = exec.Command("ssh",
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "UserKnownHostsFile=/dev/null",
-			"-o", "LogLevel=ERROR",
-			hostAlias,
+		args := []string{}
+		args = addInsecureFlags(args)
+		args = append(args, "-o", "LogLevel=ERROR", hostAlias,
 			fmt.Sprintf("sqlite3 %s %q 2>/dev/null || echo ''", dbPath, query))
+		cmd = exec.Command("ssh", args...)
 	} else {
-		args := []string{
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "UserKnownHostsFile=/dev/null",
-			"-o", "LogLevel=ERROR",
-		}
+		args := []string{}
+		args = addInsecureFlags(args)
+		args = append(args, "-o", "LogLevel=ERROR")
 		if keyPath != "" {
 			args = append(args, "-i", keyPath)
 		}
@@ -165,22 +178,30 @@ func queryNPMFromHost(nginxContainerName, containerName string, containerPort in
 	return nil, fmt.Errorf("no domains found")
 }
 
-func getNginxDomainsFromConfig(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string) ([]string, error) {
+func getNginxDomainsFromConfig(nginxContainerName, containerName string, containerPort int, server, user, keyPath string, useHostAlias bool, hostAlias string, insecure bool) ([]string, error) {
 	var cmd *exec.Cmd
 
-	if useHostAlias {
-		cmd = exec.Command("ssh",
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "UserKnownHostsFile=/dev/null",
-			"-o", "LogLevel=ERROR",
-			hostAlias,
-			fmt.Sprintf("docker exec %s find /data/nginx/proxy_host -name '*.conf' -exec grep -l '%s:%d' {} \\; 2>/dev/null | head -1 | xargs grep -oP 'server_name\\s+\\K[^;]+' 2>/dev/null || echo ''", nginxContainerName, containerName, containerPort))
-	} else {
-		args := []string{
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "UserKnownHostsFile=/dev/null",
-			"-o", "LogLevel=ERROR",
+	// Helper to add insecure flags
+	addInsecureFlags := func(args []string) []string {
+		if insecure {
+			return append(args,
+				"-o", "StrictHostKeyChecking=no",
+				"-o", "UserKnownHostsFile=/dev/null",
+			)
 		}
+		return args
+	}
+
+	if useHostAlias {
+		args := []string{}
+		args = addInsecureFlags(args)
+		args = append(args, "-o", "LogLevel=ERROR", hostAlias,
+			fmt.Sprintf("docker exec %s find /data/nginx/proxy_host -name '*.conf' -exec grep -l '%s:%d' {} \\; 2>/dev/null | head -1 | xargs grep -oP 'server_name\\s+\\K[^;]+' 2>/dev/null || echo ''", nginxContainerName, containerName, containerPort))
+		cmd = exec.Command("ssh", args...)
+	} else {
+		args := []string{}
+		args = addInsecureFlags(args)
+		args = append(args, "-o", "LogLevel=ERROR")
 		if keyPath != "" {
 			args = append(args, "-i", keyPath)
 		}

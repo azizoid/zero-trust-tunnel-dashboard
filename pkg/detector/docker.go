@@ -31,12 +31,17 @@ type PortInfo struct {
 }
 
 // buildSSHCommand constructs an SSH command for remote execution
-func buildSSHCommand(server, user, keyPath string, useHostAlias bool, hostAlias, cmd string) *exec.Cmd {
-	args := []string{
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "LogLevel=ERROR",
+func buildSSHCommand(server, user, keyPath string, useHostAlias bool, hostAlias, cmd string, insecure bool) *exec.Cmd {
+	var args []string
+
+	if insecure {
+		args = append(args,
+			"-o", "StrictHostKeyChecking=no",
+			"-o", "UserKnownHostsFile=/dev/null",
+		)
 	}
+
+	args = append(args, "-o", "LogLevel=ERROR")
 
 	if useHostAlias {
 		args = append(args, hostAlias, cmd)
@@ -51,9 +56,9 @@ func buildSSHCommand(server, user, keyPath string, useHostAlias bool, hostAlias,
 }
 
 // executeDockerPS runs docker ps remotely via SSH and returns the output
-func executeDockerPS(server, user, keyPath string, useHostAlias bool, hostAlias string) (string, error) {
+func executeDockerPS(server, user, keyPath string, useHostAlias bool, hostAlias string, insecure bool) (string, error) {
 	cmd := buildSSHCommand(server, user, keyPath, useHostAlias, hostAlias,
-		"docker ps --format '{{.Names}}|{{.Image}}|{{.Ports}}|{{.Networks}}'")
+		"docker ps --format '{{.Names}}|{{.Image}}|{{.Ports}}|{{.Networks}}'", insecure)
 
 	output, err := cmd.Output()
 	if err != nil {
@@ -67,8 +72,8 @@ func executeDockerPS(server, user, keyPath string, useHostAlias bool, hostAlias 
 }
 
 // DetectDockerServices detects Docker services with ports exposed to the host
-func DetectDockerServices(server, user, keyPath string, useHostAlias bool, hostAlias string) (map[int]*DockerService, error) {
-	output, err := executeDockerPS(server, user, keyPath, useHostAlias, hostAlias)
+func DetectDockerServices(server, user, keyPath string, useHostAlias bool, hostAlias string, insecure bool) (map[int]*DockerService, error) {
+	output, err := executeDockerPS(server, user, keyPath, useHostAlias, hostAlias, insecure)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +82,8 @@ func DetectDockerServices(server, user, keyPath string, useHostAlias bool, hostA
 }
 
 // GetAllDockerContainers returns all Docker containers regardless of port exposure
-func GetAllDockerContainers(server, user, keyPath string, useHostAlias bool, hostAlias string) ([]*DockerService, error) {
-	output, err := executeDockerPS(server, user, keyPath, useHostAlias, hostAlias)
+func GetAllDockerContainers(server, user, keyPath string, useHostAlias bool, hostAlias string, insecure bool) ([]*DockerService, error) {
+	output, err := executeDockerPS(server, user, keyPath, useHostAlias, hostAlias, insecure)
 	if err != nil {
 		return nil, err
 	}
