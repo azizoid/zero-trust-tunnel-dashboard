@@ -241,6 +241,10 @@ func (c *Controller) Run(ctx context.Context) error {
 	c.httpServer = server.NewServer(c.config.DashboardPort, services)
 	c.httpServer.SetHTML(html)
 	c.httpServer.SetScanner(c.portScanner)
+	c.httpServer.SetShutdownFunc(func() {
+		fmt.Println("\nShutdown initiated via dashboard...")
+		c.cancel()
+	})
 
 	go func() {
 		if err := c.httpServer.Start(); err != nil {

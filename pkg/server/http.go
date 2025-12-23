@@ -13,7 +13,8 @@ type Server struct {
 	port     int
 	services []detector.Service
 	html     string
-	scanner  *scanner.Scanner
+	// shutdownFunc is called to gracefully shut down the application
+	shutdownFunc func()
 }
 
 func NewServer(port int, services []detector.Service) *Server {
@@ -31,10 +32,15 @@ func (s *Server) SetHTML(html string) {
 	s.html = html
 }
 
+func (s *Server) SetShutdownFunc(fn func()) {
+	s.shutdownFunc = fn
+}
+
 func (s *Server) Start() error {
 	http.HandleFunc("/", s.handleDashboard)
 	http.HandleFunc("/api/services", s.handleServicesAPI)
 	http.HandleFunc("/api/scan", s.handleScan)
+	http.HandleFunc("/api/shutdown", s.handleShutdown)
 	http.HandleFunc("/health", s.handleHealth)
 
 	addr := fmt.Sprintf(":%d", s.port)
@@ -58,6 +64,34 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(s.html)) //nolint:errcheck // Ignore write error
 	} else {
 		_, _ = fmt.Fprintf(w, "<html><body><h1>Zero-Trust Tunnel Dashboard</h1><p>Dashboard is loading...</p></body></html>") //nolint:errcheck // Ignore write error
+	}
+}
+
+func (s *Server) handleShutdown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = fmt.Fprintf(w, `
+		<html>
+		<body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
+			<h1>Tunnel Stopped</h1>
+			<p>You can close this window now.</p>
+			<script>window.stop();</script>
+		</body>
+		</html>
+	`) //nolint:errcheck
+
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	if s.shutdownFunc != nil {
+		go func() {
+			s.shutdownFunc()
+		}()
 	}
 }
 

@@ -127,6 +127,14 @@
             background: #45a049;
             transform: translateY(-2px);
         }
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+        }
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -369,9 +377,25 @@
             <input type="text" id="searchBox" class="search-box" placeholder="Search services..." onkeyup="filterServices()">
             <button class="btn btn-success" id="scanBtn" onclick="scanPorts()">Scan Open Ports</button>
             <button class="btn btn-primary" onclick="location.reload()">Refresh Dashboard</button>
+            <button class="btn btn-danger" onclick="stopTunnel()">Stop Tunnel</button>
         </div>
         <div id="scanResult" class="scan-result"></div>
         <script>
+        function stopTunnel() {
+            if (!confirm('Are you sure you want to stop the tunnel and close the application?')) return;
+            
+            const btn = document.querySelector('.btn-danger');
+            btn.disabled = true;
+            btn.textContent = 'Stopping...';
+            
+            // Create a form to submit POST request
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/api/shutdown';
+            document.body.appendChild(form);
+            form.submit();
+        }
+
         function scanPorts() {
             const btn = document.getElementById('scanBtn');
             const result = document.getElementById('scanResult');
