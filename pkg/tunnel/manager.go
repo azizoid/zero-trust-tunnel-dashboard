@@ -147,11 +147,9 @@ func (m *Manager) monitorTunnel(t *Tunnel) {
 			return
 		}
 		t.errChan <- err
-	} else {
+	} else if t.ctx.Err() == nil {
 		// Process exited with 0, still means tunnel closed
-		if t.ctx.Err() == nil {
-			t.errChan <- fmt.Errorf("tunnel process exited unexpectedly with code 0")
-		}
+		t.errChan <- fmt.Errorf("tunnel process exited unexpectedly with code 0")
 	}
 	close(t.errChan)
 }
