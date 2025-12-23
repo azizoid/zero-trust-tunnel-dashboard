@@ -13,6 +13,7 @@ type Server struct {
 	port     int
 	services []detector.Service
 	html     string
+	scanner  *scanner.Scanner
 	// shutdownFunc is called to gracefully shut down the application
 	shutdownFunc func()
 }

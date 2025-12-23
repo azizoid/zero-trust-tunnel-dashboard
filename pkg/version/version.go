@@ -8,7 +8,7 @@ import (
 var (
 	// Version is the version of the application
 	// This should be set via build flags: -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Version=v0.1.0"
-	Version = "v1.3.3"
+	Version = "v1.3.4"
 
 	// Commit is the git commit hash
 	// This should be set via build flags: -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Commit=$(git rev-parse --short HEAD)"
