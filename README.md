@@ -73,6 +73,29 @@ go build -o tunnel-dash ./cmd/tunnel-dash
 ./tunnel-dash --server example.com --user admin
 ```
 
+### Convenient Run Script
+
+For easier usage (similar to `pnpm run`), you can use the `run` script which automatically builds if needed:
+
+```bash
+# Run with SSH config host
+./run --host your-server
+
+# Run with direct connection
+./run --server example.com --user admin
+
+# With additional options
+./run --host my-server --scan-ports 3000-9000 --dashboard-port 8080
+```
+
+The script will automatically rebuild the binary if source files have changed, so you don't need to remember to rebuild manually.
+
+Alternatively, you can use `make run`:
+
+```bash
+make run ARGS="--host your-server"
+```
+
 ## Installation
 
 ### Prerequisites

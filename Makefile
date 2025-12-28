@@ -1,4 +1,4 @@
-.PHONY: build test bench lint vulncheck clean install
+.PHONY: build test bench lint vulncheck clean install run
 
 # Build variables
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -17,6 +17,10 @@ BINARY_NAME = tunnel-dash
 build:
 	@echo "Building $(BINARY_NAME)..."
 	@go build $(BUILD_FLAGS) -o $(BINARY_NAME) ./cmd/tunnel-dash
+
+run: build
+	@echo "Running $(BINARY_NAME)..."
+	@./$(BINARY_NAME) $(ARGS)
 
 build-reproducible:
 	@echo "Building $(BINARY_NAME) with reproducible build flags..."
@@ -69,6 +73,7 @@ help:
 	@echo "Available targets:"
 	@echo "  build              - Build the binary"
 	@echo "  build-reproducible - Build with reproducible flags"
+	@echo "  run                - Build and run the tool (use: make run ARGS=\"--host my-server\")"
 	@echo "  test               - Run tests"
 	@echo "  bench              - Run benchmarks"
 	@echo "  lint               - Run linter"

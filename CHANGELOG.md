@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-12-29
+
+### Added
+- `run` script for convenient execution (similar to `pnpm run`)
+- `make run` target for building and running the tool
+- Automatic build detection in run script
+
+### Changed
+- Updated README with documentation for convenient run methods
+
+## [1.4.0] - 2025-12-24
+
+### Added
+- "Stop Tunnel" button to the dashboard for graceful shutdown
+- `/api/shutdown` endpoint to handle tunnel termination
+- User confirmation dialog before stopping the tunnel
+
+
 ## [1.2.0] - 2025-12-23
 
 ### Changed
@@ -58,7 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Localhost-only binding for tunnels and dashboard
 - SSH key authentication support
 
-[Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.2.0...v1.4.0
 [1.2.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.1.0...v1.1.1
 [0.1.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/releases/tag/v0.1.0
