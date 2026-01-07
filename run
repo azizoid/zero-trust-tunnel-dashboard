@@ -1,7 +1,9 @@
 #!/bin/bash
-# Simple wrapper script to build and run tunnel-dash
-# Usage: ./run --host my-server
-#        ./run --server example.com --user admin
+# Ultimate run script - similar to pnpm run
+# Usage: ./run                    # List available commands
+#        ./run build              # Build the binary
+#        ./run test               # Run tests
+#        ./run --host my-server   # Run tunnel-dash with arguments
 
 set -e
 
@@ -9,13 +11,90 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Build if binary doesn't exist or if source files are newer
-if [ ! -f "./tunnel-dash" ] || [ "$(find ./cmd ./pkg -type f -name '*.go' -newer ./tunnel-dash 2>/dev/null | head -1)" ]; then
-    echo "Building tunnel-dash..."
-    make build > /dev/null 2>&1 || make build
+# Function to check if a command is valid
+is_valid_command() {
+    case "$1" in
+        build|test|bench|lint|vulncheck|clean|install|release|help)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# Function to get command description
+get_command_desc() {
+    case "$1" in
+        build) echo "Build the binary" ;;
+        test) echo "Run tests" ;;
+        bench) echo "Run benchmarks" ;;
+        lint) echo "Run linter" ;;
+        vulncheck) echo "Check for vulnerabilities" ;;
+        clean) echo "Clean build artifacts" ;;
+        install) echo "Install to GOPATH/bin" ;;
+        release) echo "Build release binaries with checksums" ;;
+        help) echo "Show this help message" ;;
+    esac
+}
+
+# Function to show available commands
+show_commands() {
+    echo "Available commands:"
+    echo ""
+    for cmd in build test bench lint vulncheck clean install release help; do
+        printf "  %-15s %s\n" "$cmd" "$(get_command_desc "$cmd")"
+    done
+    echo ""
+    echo "Examples:"
+    echo "  ./run build                    # Build the binary"
+    echo "  ./run test                     # Run tests"
+    echo "  ./run --host my-server         # Run tunnel-dash with SSH host"
+    echo "  ./run --server example.com --user admin  # Run with direct connection"
+    echo ""
+    echo "For tunnel-dash options, pass them directly:"
+    echo "  ./run --host my-server --scan-ports 3000-9000"
+}
+
+# If no arguments provided, show available commands
+if [ $# -eq 0 ]; then
+    show_commands
+    exit 0
 fi
 
-# Run with all passed arguments
-exec ./tunnel-dash "$@"
+# Check if first argument is a known command
+FIRST_ARG="$1"
+if is_valid_command "$FIRST_ARG"; then
+    # It's a known command, execute it via make
+    if [ "$FIRST_ARG" = "help" ]; then
+        show_commands
+        exit 0
+    fi
+    
+    # Shift to get remaining arguments for the command
+    shift
+    make "$FIRST_ARG" "$@"
+    exit $?
+fi
+
+# If first argument starts with --, it's a tunnel-dash option
+# Build if needed, then run tunnel-dash
+if [ "${FIRST_ARG#--}" != "$FIRST_ARG" ]; then
+    # Build if binary doesn't exist or if source files are newer
+    if [ ! -f "./tunnel-dash" ] || [ "$(find ./cmd ./pkg -type f -name '*.go' -newer ./tunnel-dash 2>/dev/null | head -1)" ]; then
+        echo "Building tunnel-dash..."
+        make build > /dev/null 2>&1 || make build
+    fi
+    
+    # Run tunnel-dash with all arguments
+    exec ./tunnel-dash "$@"
+    exit $?
+fi
+
+# Unknown command
+echo "Unknown command: $FIRST_ARG"
+echo ""
+show_commands
+exit 1
 
 
