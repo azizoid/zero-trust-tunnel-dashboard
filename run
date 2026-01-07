@@ -1,21 +1,39 @@
 #!/bin/bash
-# Simple wrapper script to build and run tunnel-dash
-# Usage: ./run --host my-server
-#        ./run --server example.com --user admin
 
 set -e
 
-# Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Build if binary doesn't exist or if source files are newer
-if [ ! -f "./tunnel-dash" ] || [ "$(find ./cmd ./pkg -type f -name '*.go' -newer ./tunnel-dash 2>/dev/null | head -1)" ]; then
-    echo "Building tunnel-dash..."
-    make build > /dev/null 2>&1 || make build
+source "$SCRIPT_DIR/scripts/lib/commands.sh"
+source "$SCRIPT_DIR/scripts/lib/ssh.sh"
+source "$SCRIPT_DIR/scripts/lib/build.sh"
+source "$SCRIPT_DIR/scripts/lib/interactive.sh"
+
+if [ $# -eq 0 ]; then
+    interactive_connection
+    exit $?
 fi
 
-# Run with all passed arguments
-exec ./tunnel-dash "$@"
+FIRST_ARG="$1"
+if is_valid_command "$FIRST_ARG"; then
+    if [ "$FIRST_ARG" = "help" ]; then
+        show_commands
+        exit 0
+    fi
+    
+    shift
+    make "$FIRST_ARG" "$@"
+    exit $?
+fi
 
+if [ "${FIRST_ARG#--}" != "$FIRST_ARG" ]; then
+    build_tunnel_dash
+    exec ./tunnel-dash "$@"
+    exit $?
+fi
 
+echo "Unknown command: $FIRST_ARG"
+echo ""
+show_commands
+exit 1

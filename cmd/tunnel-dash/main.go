@@ -23,6 +23,7 @@ func main() {
 		tunnelStartPort = flag.Int("tunnel-start-port", 9000, "Starting port for local tunnel ports")
 		detectionMode   = flag.String("detection-mode", "both", "Service detection method: docker, direct, or both (default: both)")
 		insecure        = flag.Bool("insecure", false, "Disable strict host key checking (WARNING: Man-in-the-Middle risk)")
+		showServices    = flag.Bool("show-services", false, "Show detected services in CLI output")
 		showVersion     = flag.Bool("version", false, "Show version information and exit")
 	)
 	flag.Parse()
@@ -50,6 +51,7 @@ func main() {
 		TunnelStartPort: *tunnelStartPort,
 		DetectionMode:   *detectionMode,
 		Insecure:        *insecure,
+		ShowServices:    *showServices,
 	}
 
 	controller, err := app.NewController(config)
