@@ -230,6 +230,15 @@ Or with SSH config (key is read from config):
 ./tunnel-dash --host my-server --detection-mode both
 ```
 
+### CLI Output Control
+
+By default, the CLI output is kept clean and only shows essential information. To see the detailed list of detected services:
+
+```bash
+# Show services in CLI output
+./tunnel-dash --host my-server --show-services
+```
+
 ### All Options
 
 ```bash
@@ -266,6 +275,7 @@ Or with direct connection:
 | `--dashboard-port` | Port for the web dashboard | 8080 |
 | `--tunnel-start-port` | Starting port for local tunnel ports | 9000 |
 | `--detection-mode` | Service detection method: `docker`, `direct`, or `both` | both |
+| `--show-services` | Show detected services in CLI output | false |
 | `--version` | Show version information and exit | - |
 
 **Note**: Either use `--host` (reads from SSH config) or use both `--server` and `--user` (direct connection).

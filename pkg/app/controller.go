@@ -25,6 +25,7 @@ type Config struct {
 	TunnelStartPort int
 	DetectionMode   string
 	Insecure        bool
+	ShowServices    bool
 }
 
 type Controller struct {
@@ -253,7 +254,9 @@ func (c *Controller) Run(ctx context.Context) error {
 		}
 	}()
 
-	fmt.Println(c.dashGen.GenerateCLI(localPorts, c.config.TunnelStartPort))
+	if c.config.ShowServices {
+		fmt.Println(c.dashGen.GenerateCLI(localPorts, c.config.TunnelStartPort))
+	}
 	fmt.Printf("Web dashboard available at: http://localhost:%d\n", c.config.DashboardPort)
 	fmt.Println("\nPress Ctrl+C to stop...")
 
