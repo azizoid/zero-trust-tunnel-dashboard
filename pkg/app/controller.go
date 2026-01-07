@@ -13,6 +13,7 @@ import (
 	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/server"
 	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/sshconfig"
 	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/tunnel"
+	"github.com/azizoid/zero-trust-tunnel-dashboard/pkg/ui"
 )
 
 type Config struct {
@@ -157,8 +158,13 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 
 	if c.config.DetectionMode == "direct" || (c.config.DetectionMode == "both" && len(ports) == 0) {
-		fmt.Println("Scanning for open ports...")
-		scannedPorts, err := c.portScanner.ScanPorts(c.config.ScanPorts)
+		var scannedPorts []int
+		var err error
+
+		err = ui.PrintWithDots("Scanning for open ports", func() error {
+			scannedPorts, err = c.portScanner.ScanPorts(c.config.ScanPorts)
+			return err
+		})
 		if err != nil {
 			return fmt.Errorf("error scanning ports: %v", err)
 		}
@@ -181,16 +187,24 @@ func (c *Controller) Run(ctx context.Context) error {
 
 	fmt.Printf("Found %d port(s) to tunnel: %v\n\n", len(ports), ports)
 
-	fmt.Println("Creating SSH tunnels...")
+	spinner := ui.NewSpinner("Creating SSH tunnels")
+	spinner.Start()
+
 	localPorts := make(map[int]int)
 	for _, port := range ports {
 		localPort, err := c.tunnelMgr.CreateTunnel(port)
 		if err != nil {
+			spinner.Stop()
 			fmt.Fprintf(os.Stderr, "Failed to create tunnel for port %d: %v\n", port, err)
+			spinner.Start()
 			continue
 		}
 		localPorts[port] = localPort
-		fmt.Printf("   Tunnel created: localhost:%d -> %s:%d\n", localPort, finalServer, port)
+	}
+
+	spinner.Stop()
+	for port, localPort := range localPorts {
+		fmt.Printf("   ✓ Tunnel created: localhost:%d -> %s:%d\n", localPort, finalServer, port)
 	}
 
 	if len(localPorts) == 0 {
@@ -199,10 +213,10 @@ func (c *Controller) Run(ctx context.Context) error {
 
 	fmt.Println()
 
-	fmt.Println("Waiting for tunnels to stabilize...")
-	time.Sleep(2 * time.Second)
+	ui.ShowDots("Waiting for tunnels to stabilize", 2*time.Second)
 
-	fmt.Println("Detecting services...")
+	detectSpinner := ui.NewSpinner("Detecting services")
+	detectSpinner.Start()
 
 	if dockerServices == nil {
 		dockerServices = make(map[int]*detector.DockerService)
@@ -222,7 +236,13 @@ func (c *Controller) Run(ctx context.Context) error {
 		c.handleNginxProxy(services, dockerServices, allContainers, localPorts, finalServer, finalUser, finalKey, &services)
 	}
 
-	fmt.Printf("Detected %d service(s)\n\n", len(services))
+	// Nginx Proxy Manager handling
+	if c.config.DetectionMode == "docker" || c.config.DetectionMode == "both" {
+		c.handleNginxProxy(services, dockerServices, allContainers, localPorts, finalServer, finalUser, finalKey, &services)
+	}
+
+	detectSpinner.StopWithMessage(fmt.Sprintf("Detected %d service(s)", len(services)))
+	fmt.Println()
 	for i := range services {
 		if services[i].Port > 0 {
 			if strings.HasPrefix(services[i].URL, "https://") {

@@ -45,7 +45,6 @@ func (s *Server) Start() error {
 	http.HandleFunc("/health", s.handleHealth)
 
 	addr := fmt.Sprintf(":%d", s.port)
-	fmt.Printf("Dashboard server starting on http://localhost%s\n", addr)
 	return http.ListenAndServe(addr, nil)
 }
 
