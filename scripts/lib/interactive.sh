@@ -1,7 +1,5 @@
 #!/bin/bash
-# Interactive connection setup
 
-# Function to prompt for connection
 interactive_connection() {
     echo "How would you like to connect?"
     echo "  1) SSH config host"

@@ -1,7 +1,5 @@
 #!/bin/bash
-# SSH configuration functions
 
-# Function to list SSH config hosts
 list_ssh_hosts() {
     local ssh_config="${HOME}/.ssh/config"
     if [ ! -f "$ssh_config" ]; then

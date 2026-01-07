@@ -1,7 +1,5 @@
 #!/bin/bash
-# Build functions
 
-# Function to check if build is needed
 needs_build() {
     if [ ! -f "./tunnel-dash" ]; then
         return 0
@@ -14,7 +12,6 @@ needs_build() {
     return 1
 }
 
-# Function to build tunnel-dash
 build_tunnel_dash() {
     if needs_build; then
         echo "Building tunnel-dash..."

@@ -1,52 +1,38 @@
 #!/bin/bash
-# Ultimate run script - similar to pnpm run
-# Usage: ./run                    # Interactive connection setup
-#        ./run build              # Build the binary
-#        ./run test               # Run tests
-#        ./run --host my-server   # Run tunnel-dash with arguments
 
 set -e
 
-# Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Source library modules
 source "$SCRIPT_DIR/scripts/lib/commands.sh"
 source "$SCRIPT_DIR/scripts/lib/ssh.sh"
 source "$SCRIPT_DIR/scripts/lib/build.sh"
 source "$SCRIPT_DIR/scripts/lib/interactive.sh"
 
-# If no arguments provided, start interactive mode
 if [ $# -eq 0 ]; then
     interactive_connection
     exit $?
 fi
 
-# Check if first argument is a known command
 FIRST_ARG="$1"
 if is_valid_command "$FIRST_ARG"; then
-    # It's a known command, execute it via make
     if [ "$FIRST_ARG" = "help" ]; then
         show_commands
         exit 0
     fi
     
-    # Shift to get remaining arguments for the command
     shift
     make "$FIRST_ARG" "$@"
     exit $?
 fi
 
-# If first argument starts with --, it's a tunnel-dash option
-# Build if needed, then run tunnel-dash
 if [ "${FIRST_ARG#--}" != "$FIRST_ARG" ]; then
     build_tunnel_dash
     exec ./tunnel-dash "$@"
     exit $?
 fi
 
-# Unknown command
 echo "Unknown command: $FIRST_ARG"
 echo ""
 show_commands

@@ -1,7 +1,5 @@
 #!/bin/bash
-# Command validation and help functions
 
-# Function to check if a command is valid
 is_valid_command() {
     case "$1" in
         build|test|bench|lint|vulncheck|clean|install|release|help)
@@ -13,7 +11,6 @@ is_valid_command() {
     esac
 }
 
-# Function to get command description
 get_command_desc() {
     case "$1" in
         build) echo "Build the binary" ;;
@@ -28,7 +25,6 @@ get_command_desc() {
     esac
 }
 
-# Function to show available commands
 show_commands() {
     echo "Available commands:"
     echo ""
