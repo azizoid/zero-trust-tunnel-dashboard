@@ -16,7 +16,7 @@ BINARY_NAME = tunnel-dash
 
 build:
 	@echo "Building $(BINARY_NAME)..."
-	@go build $(BUILD_FLAGS) -o $(BINARY_NAME) ./cmd/tunnel-dash
+	@go build $(BUILD_FLAGS) -o $(BINARY_NAME) .
 
 run: build
 	@echo "Running $(BINARY_NAME)..."
@@ -24,7 +24,7 @@ run: build
 
 build-reproducible:
 	@echo "Building $(BINARY_NAME) with reproducible build flags..."
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(BUILD_FLAGS) -o $(BINARY_NAME) ./cmd/tunnel-dash
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(BUILD_FLAGS) -o $(BINARY_NAME) .
 
 test:
 	@echo "Running tests..."
@@ -50,7 +50,7 @@ clean:
 
 install:
 	@echo "Installing $(BINARY_NAME)..."
-	@go install $(BUILD_FLAGS) ./cmd/tunnel-dash
+	@go install $(BUILD_FLAGS) .
 
 # Release build with checksums
 release:
@@ -63,7 +63,7 @@ release:
 			else \
 				ext=""; \
 			fi; \
-			GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build $(BUILD_FLAGS) -o dist/$(BINARY_NAME)-$$os-$$arch$$ext ./cmd/tunnel-dash; \
+			GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build $(BUILD_FLAGS) -o dist/$(BINARY_NAME)-$$os-$$arch$$ext .; \
 		done; \
 	done
 	@echo "Generating checksums..."

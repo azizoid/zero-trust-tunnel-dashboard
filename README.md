@@ -53,48 +53,52 @@ Host my-server
 Then you can simply run:
 
 ```bash
-./tunnel-dash --host my-server
+./run --host my-server
 ```
 
 ## Quick Start
+
+**Just use the `run` script - it handles everything automatically:**
 
 ```bash
 # Clone the repository
 git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
 cd zero-trust-tunnel-dashboard
 
-# Build the tool
-go build -o tunnel-dash ./cmd/tunnel-dash
-
-# Run it (using SSH config)
-./tunnel-dash --host your-server
-
-# Or with direct connection
-./tunnel-dash --server example.com --user admin
-```
-
-### Convenient Run Script
-
-For easier usage (similar to `pnpm run`), you can use the `run` script which automatically builds if needed:
-
-```bash
-# Run with SSH config host
+# Run with SSH config host (auto-builds if needed)
 ./run --host your-server
 
 # Run with direct connection
 ./run --server example.com --user admin
 
-# With additional options
-./run --host my-server --scan-ports 3000-9000 --dashboard-port 8080
+# Interactive mode (no arguments) - easiest way to get started
+./run
 ```
 
-The script will automatically rebuild the binary if source files have changed, so you don't need to remember to rebuild manually.
+That's it! The `run` script automatically builds the binary if needed, so you never have to think about building. Just run it.
 
-Alternatively, you can use `make run`:
+### Additional Options
 
 ```bash
-make run ARGS="--host your-server"
+# With custom port range
+./run --host my-server --scan-ports 3000-9000
+
+# With custom dashboard port
+./run --host my-server --dashboard-port 8080
+
+# Show all available commands
+./run help
 ```
+
+### For Production / System-Wide Installation
+
+If you want to install it system-wide (so you can use `tunnel-dash` from anywhere):
+
+```bash
+go install github.com/azizoid/zero-trust-tunnel-dashboard@latest
+```
+
+Then you can use `tunnel-dash` directly from any directory.
 
 ## Installation
 
@@ -105,32 +109,28 @@ make run ARGS="--host your-server"
 - SSH access to your target server
 - `ss` or `netstat` command available on the remote server
 
-### Build from Source
+### Install via Go Install (Recommended)
 
-**Using Make (Recommended):**
+The simplest way to install is using `go install`:
+
 ```bash
-# Clone the repository
-git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
-cd zero-trust-tunnel-dashboard
-
-# Build the tool
-make build
-
-# The binary is now ready to use
-./tunnel-dash --help
+go install github.com/azizoid/zero-trust-tunnel-dashboard@latest
 ```
 
-**Using Go directly:**
+This will install `tunnel-dash` to your `$GOPATH/bin` or `$HOME/go/bin` directory. Make sure this directory is in your `PATH`.
+
+**Note**: With `main.go` in the root directory, the installation path is shorter and simpler than before.
+
+### Build from Source (Optional)
+
+**You don't need to build manually** - just use `./run` and it builds automatically. But if you want to build explicitly:
+
 ```bash
-# Clone the repository
-git clone https://github.com/azizoid/zero-trust-tunnel-dashboard.git
-cd zero-trust-tunnel-dashboard
+# Using Make
+make build
 
-# Build the tool
-go build -o tunnel-dash ./cmd/tunnel-dash
-
-# The binary is now ready to use
-./tunnel-dash --help
+# Or using Go directly
+go build -o tunnel-dash .
 ```
 
 **Reproducible Build:**
@@ -156,7 +156,7 @@ VERSION="v0.1.0"
 COMMIT=$(git rev-parse --short HEAD)
 BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-go build -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Version=${VERSION} -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Commit=${COMMIT} -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.BuildDate=${BUILD_DATE}" -o tunnel-dash ./cmd/tunnel-dash
+go build -ldflags "-X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Version=${VERSION} -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.Commit=${COMMIT} -X github.com/azizoid/zero-trust-tunnel-dashboard/pkg/version.BuildDate=${BUILD_DATE}" -o tunnel-dash .
 
 # Verify version
 ./tunnel-dash --version
@@ -177,12 +177,14 @@ make help        # Show all available commands
 
 ## Usage
 
+All examples use `./run` which automatically builds if needed. If you've installed via `go install`, you can use `tunnel-dash` directly instead.
+
 ### Using SSH Config (Recommended)
 
 If you have your SSH connection configured in `~/.ssh/config`, you can use the host alias directly:
 
 ```bash
-./tunnel-dash --host my-server
+./run --host my-server
 ```
 
 This will automatically read the server address, user, and key from your SSH config file.
@@ -190,44 +192,44 @@ This will automatically read the server address, user, and key from your SSH con
 ### Direct Connection
 
 ```bash
-./tunnel-dash --server example.com --user admin
+./run --server example.com --user admin
 ```
 
 ### With SSH Key
 
 ```bash
-./tunnel-dash --server example.com --user admin --key ~/.ssh/id_rsa
+./run --server example.com --user admin --key ~/.ssh/id_rsa
 ```
 
 Or with SSH config (key is read from config):
 
 ```bash
-./tunnel-dash --host my-server
+./run --host my-server
 ```
 
 ### Custom Port Range
 
 ```bash
-./tunnel-dash --host my-server --scan-ports 3000-9000
+./run --host my-server --scan-ports 3000-9000
 ```
 
 ### Custom Dashboard Port
 
 ```bash
-./tunnel-dash --host my-server --dashboard-port 8080
+./run --host my-server --dashboard-port 8080
 ```
 
 ### Detection Mode Examples
 
 ```bash
 # Use Docker detection only (fastest, requires Docker)
-./tunnel-dash --host my-server --detection-mode docker
+./run --host my-server --detection-mode docker
 
 # Use HTTP probing only (works without Docker)
-./tunnel-dash --host my-server --detection-mode direct
+./run --host my-server --detection-mode direct
 
 # Use both methods (default, most accurate)
-./tunnel-dash --host my-server --detection-mode both
+./run --host my-server --detection-mode both
 ```
 
 ### CLI Output Control
@@ -236,13 +238,13 @@ By default, the CLI output is kept clean and only shows essential information. T
 
 ```bash
 # Show services in CLI output
-./tunnel-dash --host my-server --show-services
+./run --host my-server --show-services
 ```
 
 ### All Options
 
 ```bash
-./tunnel-dash \
+./run \
   --host my-server \
   --scan-ports 3000-9000 \
   --dashboard-port 8080 \
@@ -253,7 +255,7 @@ By default, the CLI output is kept clean and only shows essential information. T
 Or with direct connection:
 
 ```bash
-./tunnel-dash \
+./run \
   --server example.com \
   --user admin \
   --key ~/.ssh/id_rsa \

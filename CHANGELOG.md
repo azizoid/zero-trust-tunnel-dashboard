@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-01-08
+
+### Changed
+- Moved `main.go` from `cmd/tunnel-dash/` to root directory for shorter installation path
+- Simplified installation: `go install github.com/azizoid/zero-trust-tunnel-dashboard@latest` (no longer requires `./cmd/tunnel-dash` path)
+- Updated all documentation to emphasize `./run` script as the primary usage method
+- Streamlined build commands: `go build -o tunnel-dash .` instead of `go build -o tunnel-dash ./cmd/tunnel-dash`
+
+### Improved
+- Better developer experience: `./run` script is now the recommended way to use the tool
+- Cleaner project structure with single entry point at root
+
+## [1.6.0] - Previous release
+
 ## [1.5.0] - 2025-12-29
 
 ### Added
@@ -76,7 +90,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Localhost-only binding for tunnels and dashboard
 - SSH key authentication support
 
-[Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.2.0...v1.4.0
 [1.2.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.1.1...v1.2.0

@@ -32,7 +32,7 @@ Thank you for your interest in contributing! This document provides guidelines a
 
 3. **Build the project**
    ```bash
-   go build -o tunnel-dash ./cmd/tunnel-dash
+   go build -o tunnel-dash .
    ```
 
 ## Development Workflow
@@ -174,8 +174,7 @@ func TestFunctionName(t *testing.T) {
 
 ```
 zero-trust-tunnel-dashboard/
-├── cmd/
-│   └── tunnel-dash/      # Main application entry point
+├── main.go               # Main application entry point
 ├── pkg/
 │   ├── config/           # Configuration management
 │   ├── dashboard/        # Dashboard generation
