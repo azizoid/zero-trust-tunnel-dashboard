@@ -1,11 +1,11 @@
 #!/bin/bash
-# Simple install script for tunnel-dash
-# Usage: ./install.sh or curl -sSL https://raw.githubusercontent.com/azizoid/zero-trust-tunnel-dashboard/main/install.sh | bash
+# One-command install for tunnel-dash
+# Usage: curl -sSL https://raw.githubusercontent.com/azizoid/zero-trust-tunnel-dashboard/main/install.sh | bash
 
 set -e
 
 echo "Installing tunnel-dash..."
-go install github.com/azizoid/zero-trust-tunnel-dashboard/cmd/tunnel-dash@latest
+go install github.com/azizoid/zero-trust-tunnel-dashboard@latest
 
 if [ $? -eq 0 ]; then
     echo "✓ tunnel-dash installed successfully!"

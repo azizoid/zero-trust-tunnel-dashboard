@@ -109,17 +109,17 @@ Then you can use `tunnel-dash` directly from any directory.
 - SSH access to your target server
 - `ss` or `netstat` command available on the remote server
 
-### Install via Go Install (Recommended)
+### Install (Recommended)
 
-The simplest way to install is using `go install`:
+**Using go install:**
 
 ```bash
 go install github.com/azizoid/zero-trust-tunnel-dashboard@latest
 ```
 
-This will install `tunnel-dash` to your `$GOPATH/bin` or `$HOME/go/bin` directory. Make sure this directory is in your `PATH`.
+This installs `tunnel-dash` to your `$GOPATH/bin` or `$HOME/go/bin` directory. Make sure this directory is in your `PATH`.
 
-**Note**: With `main.go` in the root directory, the installation path is shorter and simpler than before.
+**For local development**: Just use `./run` - it automatically builds when needed.
 
 ### Build from Source (Optional)
 
@@ -177,7 +177,7 @@ make help        # Show all available commands
 
 ## Usage
 
-All examples use `./run` which automatically builds if needed. If you've installed via `go install`, you can use `tunnel-dash` directly instead.
+All examples use `./run` which automatically builds if needed. If you've installed via the install script, you can use `tunnel-dash` directly instead.
 
 ### Using SSH Config (Recommended)
 
