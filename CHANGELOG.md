@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.5] - 2026-01-08
+
+### Fixed
+- Added `cmd/tunnel-dash/main.go` for `go install` compatibility
+- `go install github.com/azizoid/zero-trust-tunnel-dashboard/cmd/tunnel-dash@latest` now works correctly
+
 ## [1.7.4] - 2026-01-08
 
 ### Changed
@@ -99,7 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Localhost-only binding for tunnels and dashboard
 - SSH key authentication support
 
-[Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.7.4...HEAD
+[Unreleased]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.7.5...HEAD
+[1.7.5]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.7.4...v1.7.5
 [1.7.4]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.6.0...v1.7.4
 [1.7.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/azizoid/zero-trust-tunnel-dashboard/compare/v1.5.0...v1.6.0
