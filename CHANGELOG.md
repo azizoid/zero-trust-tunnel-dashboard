@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Contributor guide (`AGENTS.md`)
+
+### Changed
+- Bind dashboard HTTP server to `127.0.0.1` by default
+- In `both` mode, always scan ports and merge with Docker results
+- Service probing now targets local tunnel ports while retaining remote port metadata
+
+### Fixed
+- Duplicate Nginx Proxy Manager handling that could inflate service listings
 
 ## [1.7.6] - 2026-01-08
 
