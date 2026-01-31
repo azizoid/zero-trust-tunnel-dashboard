@@ -29,25 +29,31 @@ func NewDetector(timeout time.Duration) *Detector {
 	return &Detector{timeout: timeout}
 }
 
-func (d *Detector) DetectServices(ports []int, dockerServices map[int]*DockerService) []Service {
+func (d *Detector) DetectServices(ports []int, dockerServices map[int]*DockerService, localPorts map[int]int) []Service {
 	var services []Service
 	client := &http.Client{
 		Timeout: d.timeout,
 	}
 
 	for _, port := range ports {
+		localPort := port
+		if lp, exists := localPorts[port]; exists {
+			localPort = lp
+		}
+
 		var service *Service
 
 		if dockerSvc, exists := dockerServices[port]; exists {
 			service = IdentifyServiceFromDocker(dockerSvc)
-			httpService := d.probePort(client, port)
+			httpService := d.probePort(client, port, localPort)
 			if httpService != nil && httpService.Type != "unknown" {
 				service.Name = httpService.Name
 				service.Type = httpService.Type
 				service.Description = httpService.Description
+				service.URL = httpService.URL
 			}
 		} else {
-			service = d.probePort(client, port)
+			service = d.probePort(client, port, localPort)
 		}
 
 		if service != nil {
@@ -101,13 +107,13 @@ func (d *Detector) DetectAllDockerContainers(allContainers []*DockerService) []S
 	return services
 }
 
-func (d *Detector) probePort(client *http.Client, port int) *Service {
-	service := d.tryHTTP(client, port, false)
+func (d *Detector) probePort(client *http.Client, remotePort, localPort int) *Service {
+	service := d.tryHTTP(client, remotePort, localPort, false)
 	if service != nil && service.Type != "unknown" && service.Type != "http" {
 		return service
 	}
 
-	service = d.tryHTTP(client, port, true)
+	service = d.tryHTTP(client, remotePort, localPort, true)
 	if service != nil && service.Type != "unknown" && service.Type != "http" {
 		return service
 	}
@@ -116,7 +122,7 @@ func (d *Detector) probePort(client *http.Client, port int) *Service {
 		return service
 	}
 
-	likelyService := d.guessServiceByPort(port)
+	likelyService := d.guessServiceByPort(remotePort, localPort)
 	if likelyService != nil {
 		return likelyService
 	}
@@ -126,21 +132,21 @@ func (d *Detector) probePort(client *http.Client, port int) *Service {
 	}
 
 	return &Service{
-		Port:        port,
-		Name:        fmt.Sprintf("Service on port %d", port),
+		Port:        remotePort,
+		Name:        fmt.Sprintf("Service on port %d", remotePort),
 		Type:        "unknown",
-		URL:         fmt.Sprintf("http://localhost:%d", port),
+		URL:         fmt.Sprintf("http://localhost:%d", localPort),
 		Description: "Unknown service - may require manual inspection",
 	}
 }
 
-func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Service {
+func (d *Detector) tryHTTP(client *http.Client, remotePort, localPort int, useHTTPS bool) *Service {
 	protocol := "http"
 	if useHTTPS {
 		protocol = "https"
 	}
 
-	url := fmt.Sprintf("%s://localhost:%d", protocol, port)
+	url := fmt.Sprintf("%s://localhost:%d", protocol, localPort)
 
 	req, err := http.NewRequest("GET", url, http.NoBody)
 	if err != nil {
@@ -149,7 +155,7 @@ func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Servic
 
 	resp, err := client.Do(req)
 	if err != nil {
-		service := d.tryHTTPEndpoints(client, port, useHTTPS)
+		service := d.tryHTTPEndpoints(client, remotePort, localPort, useHTTPS)
 		if service != nil {
 			return service
 		}
@@ -159,7 +165,7 @@ func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Servic
 		_ = resp.Body.Close() //nolint:errcheck // Ignore close error
 	}()
 
-	service := d.identifyServiceFromResponse(resp, port, protocol)
+	service := d.identifyServiceFromResponse(resp, remotePort, localPort, protocol)
 	if service != nil {
 		return service
 	}
@@ -167,7 +173,7 @@ func (d *Detector) tryHTTP(client *http.Client, port int, useHTTPS bool) *Servic
 	return nil
 }
 
-func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool) *Service {
+func (d *Detector) tryHTTPEndpoints(client *http.Client, remotePort, localPort int, useHTTPS bool) *Service {
 	protocol := "http"
 	if useHTTPS {
 		protocol = "https"
@@ -176,7 +182,7 @@ func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool
 	commonPaths := []string{"/", "/login", "/api/health", "/api", "/api/v1", "/health", "/status", "/metrics", "/graphql"}
 
 	for _, path := range commonPaths {
-		url := fmt.Sprintf("%s://localhost:%d%s", protocol, port, path)
+		url := fmt.Sprintf("%s://localhost:%d%s", protocol, localPort, path)
 		req, err := http.NewRequest("GET", url, http.NoBody)
 		if err != nil {
 			continue
@@ -188,7 +194,7 @@ func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool
 		}
 
 		if resp.StatusCode < 500 {
-			service := d.identifyServiceFromResponse(resp, port, protocol)
+			service := d.identifyServiceFromResponse(resp, remotePort, localPort, protocol)
 			_ = resp.Body.Close() //nolint:errcheck // Ignore close error
 			if service != nil && service.Type != "unknown" {
 				return service
@@ -201,10 +207,10 @@ func (d *Detector) tryHTTPEndpoints(client *http.Client, port int, useHTTPS bool
 	return nil
 }
 
-func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, protocol string) *Service {
+func (d *Detector) identifyServiceFromResponse(resp *http.Response, remotePort, localPort int, protocol string) *Service {
 	service := &Service{
-		Port: port,
-		URL:  fmt.Sprintf("%s://localhost:%d", protocol, port),
+		Port: remotePort,
+		URL:  fmt.Sprintf("%s://localhost:%d", protocol, localPort),
 	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 2048))
@@ -260,21 +266,21 @@ func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, pr
 	}
 
 	if strings.Contains(bodyStr, "react") || strings.Contains(bodyStr, "vue") || strings.Contains(bodyStr, "angular") {
-		service.Name = fmt.Sprintf("Web Application (Port %d)", port)
+		service.Name = fmt.Sprintf("Web Application (Port %d)", remotePort)
 		service.Type = "webapp"
 		service.Description = "Single Page Application"
 		return service
 	}
 
 	if strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
-		service.Name = fmt.Sprintf("API Service (Port %d)", port)
+		service.Name = fmt.Sprintf("API Service (Port %d)", remotePort)
 		service.Type = "api"
 		service.Description = fmt.Sprintf("REST API Service (Status: %d)", resp.StatusCode)
 		return service
 	}
 
 	if strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
-		service.Name = fmt.Sprintf("Web Service (Port %d)", port)
+		service.Name = fmt.Sprintf("Web Service (Port %d)", remotePort)
 		service.Type = "web"
 		service.Description = fmt.Sprintf("Web Service (Status: %d)", resp.StatusCode)
 		return service
@@ -285,7 +291,7 @@ func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, pr
 		if contentType == "" {
 			contentType = "unknown"
 		}
-		service.Name = fmt.Sprintf("HTTP Service (Port %d)", port)
+		service.Name = fmt.Sprintf("HTTP Service (Port %d)", remotePort)
 		service.Type = "http"
 		service.Description = fmt.Sprintf("HTTP Service (Status: %d, Content-Type: %s)", resp.StatusCode, contentType)
 		return service
@@ -294,7 +300,7 @@ func (d *Detector) identifyServiceFromResponse(resp *http.Response, port int, pr
 	return nil
 }
 
-func (d *Detector) guessServiceByPort(port int) *Service {
+func (d *Detector) guessServiceByPort(remotePort, localPort int) *Service {
 	portMap := map[int]*Service{
 		3000:  {Name: "Node.js Dev Server", Type: "webapp", Description: "Common port for Node.js development servers"},
 		3001:  {Name: "Alternative Web Service", Type: "web", Description: "Common alternative port for web services"},
@@ -319,12 +325,12 @@ func (d *Detector) guessServiceByPort(port int) *Service {
 		3306:  {Name: "MySQL", Type: "mysql", Description: "Default MySQL port"},
 	}
 
-	if svc, exists := portMap[port]; exists {
+	if svc, exists := portMap[remotePort]; exists {
 		return &Service{
-			Port:        port,
+			Port:        remotePort,
 			Name:        svc.Name,
 			Type:        svc.Type,
-			URL:         fmt.Sprintf("http://localhost:%d", port),
+			URL:         fmt.Sprintf("http://localhost:%d", localPort),
 			Description: svc.Description,
 		}
 	}

@@ -3,6 +3,8 @@ package detector
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -66,7 +68,7 @@ func TestGuessServiceByPort(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service := detector.guessServiceByPort(tt.port)
+			service := detector.guessServiceByPort(tt.port, tt.port)
 			if tt.wantType == "" {
 				if service != nil {
 					t.Errorf("guessServiceByPort() should return nil for port %d, got %v", tt.port, service)
@@ -111,7 +113,7 @@ func TestIdentifyServiceFromResponse_Grafana(t *testing.T) {
 		_ = resp.Body.Close() //nolint:errcheck // Ignore close error in test
 	}()
 
-	service := detector.identifyServiceFromResponse(resp, 3000, "http")
+	service := detector.identifyServiceFromResponse(resp, 3000, 3000, "http")
 
 	if service == nil {
 		t.Fatal("identifyServiceFromResponse() returned nil")
@@ -149,7 +151,7 @@ func TestIdentifyServiceFromResponse_Prometheus(t *testing.T) {
 		_ = resp.Body.Close() //nolint:errcheck // Ignore close error in test
 	}()
 
-	service := detector.identifyServiceFromResponse(resp, 9090, "http")
+	service := detector.identifyServiceFromResponse(resp, 9090, 9090, "http")
 
 	if service == nil {
 		t.Fatal("identifyServiceFromResponse() returned nil")
@@ -183,7 +185,7 @@ func TestIdentifyServiceFromResponse_JSONAPI(t *testing.T) {
 		_ = resp.Body.Close() //nolint:errcheck // Ignore close error in test
 	}()
 
-	service := detector.identifyServiceFromResponse(resp, 8080, "http")
+	service := detector.identifyServiceFromResponse(resp, 8080, 8080, "http")
 
 	if service == nil {
 		t.Fatal("identifyServiceFromResponse() returned nil")
@@ -191,6 +193,77 @@ func TestIdentifyServiceFromResponse_JSONAPI(t *testing.T) {
 
 	if service.Type != "api" {
 		t.Errorf("Expected Type to be 'api', got '%s'", service.Type)
+	}
+}
+
+func TestDetectServices_UsesLocalPortForProbe(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck // Ignore write error in test
+	}))
+	defer server.Close()
+
+	localPort := mustExtractPort(t, server.URL)
+
+	detector := NewDetector(2 * time.Second)
+	ports := []int{3000}
+	dockerServices := make(map[int]*DockerService)
+	localPorts := map[int]int{3000: localPort}
+
+	services := detector.DetectServices(ports, dockerServices, localPorts)
+	if len(services) != 1 {
+		t.Fatalf("Expected 1 service, got %d", len(services))
+	}
+
+	svc := services[0]
+	if svc.Port != 3000 {
+		t.Errorf("Expected remote port 3000, got %d", svc.Port)
+	}
+	if svc.URL != "http://localhost:"+strconv.Itoa(localPort) {
+		t.Errorf("Expected URL to use local port %d, got %s", localPort, svc.URL)
+	}
+	if svc.Type != "api" {
+		t.Errorf("Expected Type to be 'api', got '%s'", svc.Type)
+	}
+}
+
+func TestDetectServices_DockerServiceOverridesWithProbe(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck // Ignore write error in test
+	}))
+	defer server.Close()
+
+	localPort := mustExtractPort(t, server.URL)
+
+	detector := NewDetector(2 * time.Second)
+	ports := []int{3000}
+	dockerServices := map[int]*DockerService{
+		3000: {
+			ContainerName: "grafana",
+			Image:         "grafana/grafana",
+			Port:          3000,
+			HasPorts:      true,
+		},
+	}
+	localPorts := map[int]int{3000: localPort}
+
+	services := detector.DetectServices(ports, dockerServices, localPorts)
+	if len(services) != 1 {
+		t.Fatalf("Expected 1 service, got %d", len(services))
+	}
+
+	svc := services[0]
+	if svc.Port != 3000 {
+		t.Errorf("Expected remote port 3000, got %d", svc.Port)
+	}
+	if svc.URL != "http://localhost:"+strconv.Itoa(localPort) {
+		t.Errorf("Expected URL to use local port %d, got %s", localPort, svc.URL)
+	}
+	if svc.Type != "api" {
+		t.Errorf("Expected Type to be 'api', got '%s'", svc.Type)
 	}
 }
 
@@ -246,6 +319,27 @@ func TestDetectServicesFromDocker(t *testing.T) {
 	if !foundUnknown {
 		t.Error("Unknown service not detected for port without Docker info")
 	}
+}
+
+func mustExtractPort(t *testing.T, rawURL string) int {
+	t.Helper()
+
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		t.Fatalf("Failed to parse URL %s: %v", rawURL, err)
+	}
+
+	portStr := parsed.Port()
+	if portStr == "" {
+		t.Fatalf("No port found in URL %s", rawURL)
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		t.Fatalf("Invalid port in URL %s: %v", rawURL, err)
+	}
+
+	return port
 }
 
 func TestIdentifyServiceFromDocker(t *testing.T) {

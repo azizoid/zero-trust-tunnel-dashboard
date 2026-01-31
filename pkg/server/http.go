@@ -44,7 +44,7 @@ func (s *Server) Start() error {
 	http.HandleFunc("/api/shutdown", s.handleShutdown)
 	http.HandleFunc("/health", s.handleHealth)
 
-	addr := fmt.Sprintf(":%d", s.port)
+	addr := fmt.Sprintf("127.0.0.1:%d", s.port)
 	return http.ListenAndServe(addr, nil)
 }
 

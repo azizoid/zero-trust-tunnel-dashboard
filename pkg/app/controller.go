@@ -157,7 +157,7 @@ func (c *Controller) Run(ctx context.Context) error {
 		}
 	}
 
-	if c.config.DetectionMode == "direct" || (c.config.DetectionMode == "both" && len(ports) == 0) {
+	if c.config.DetectionMode == "direct" || c.config.DetectionMode == "both" {
 		var scannedPorts []int
 		var err error
 
@@ -226,14 +226,9 @@ func (c *Controller) Run(ctx context.Context) error {
 
 	var services []detector.Service
 	if useDirect {
-		services = serviceDetector.DetectServices(ports, dockerServices)
+		services = serviceDetector.DetectServices(ports, dockerServices, localPorts)
 	} else {
 		services = serviceDetector.DetectServicesFromDocker(ports, dockerServices)
-	}
-
-	// Nginx Proxy Manager handling
-	if c.config.DetectionMode == "docker" || c.config.DetectionMode == "both" {
-		c.handleNginxProxy(services, dockerServices, allContainers, localPorts, finalServer, finalUser, finalKey, &services)
 	}
 
 	// Nginx Proxy Manager handling
@@ -245,10 +240,18 @@ func (c *Controller) Run(ctx context.Context) error {
 	fmt.Println()
 	for i := range services {
 		if services[i].Port > 0 {
+			localPort, exists := localPorts[services[i].Port]
+			if !exists {
+				continue
+			}
+
+			scheme := "http"
 			if strings.HasPrefix(services[i].URL, "https://") {
-				services[i].URL = fmt.Sprintf("https://localhost:%d", services[i].Port)
-			} else if services[i].URL == "" {
-				services[i].URL = fmt.Sprintf("http://localhost:%d", services[i].Port)
+				scheme = "https"
+			}
+
+			if services[i].URL == "" || strings.HasPrefix(services[i].URL, "http://") || strings.HasPrefix(services[i].URL, "https://") {
+				services[i].URL = fmt.Sprintf("%s://localhost:%d", scheme, localPort)
 			}
 		}
 	}
